@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState, type ReactNode } from "react";
 import { LeaderboardList } from "@/components/game/LeaderboardList";
 import { getLeaderboard } from "@/lib/leaderboard.functions";
+import { getDailyLeaderboard } from "@/lib/daily-leaderboard.functions";
+import { formatCountdown, msUntilNextDailyReset } from "@/game/daily";
 import { track } from "@/lib/analytics-client";
 import { ALPHASTACK_LOGO_URL } from "@/lib/assets";
 
@@ -20,17 +22,34 @@ export const Route = createFileRoute("/leaderboard")({
 });
 
 function LeaderboardPage() {
-  const [scope, setScope] = useState<"all" | "daily">("all");
+  const [scope, setScope] = useState<"daily" | "all">("daily");
   const fetchLeaderboard = useServerFn(getLeaderboard);
+  const fetchDaily = useServerFn(getDailyLeaderboard);
+  const [countdown, setCountdown] = useState(() => msUntilNextDailyReset());
+
+  useEffect(() => {
+    const id = window.setInterval(() => setCountdown(msUntilNextDailyReset()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
 
   useEffect(() => {
     track("leaderboard_viewed", { scope });
   }, [scope]);
 
-  const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["leaderboard", scope],
-    queryFn: () => fetchLeaderboard({ data: { scope, limit: 50 } }),
+  const { data: allRows = [], isLoading: allLoading } = useQuery({
+    queryKey: ["leaderboard", "all"],
+    queryFn: () => fetchLeaderboard({ data: { scope: "all", limit: 50 } }),
+    enabled: scope === "all",
   });
+
+  const { data: daily, isLoading: dailyLoading } = useQuery({
+    queryKey: ["daily-leaderboard", "today"],
+    queryFn: () => fetchDaily({ data: { limit: 50 } }),
+    enabled: scope === "daily",
+  });
+  const dailyRows = daily?.rows ?? [];
+  const isLoading = scope === "all" ? allLoading : dailyLoading;
+  const rows = scope === "all" ? allRows : dailyRows;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a1024] via-[#0b1330] to-[#0a1024] text-slate-100">
@@ -51,9 +70,15 @@ function LeaderboardPage() {
       <main className="mx-auto max-w-3xl px-4 pb-16">
         <h1 className="mt-4 text-3xl font-extrabold tracking-tight">Leaderboard</h1>
         <div className="mt-4 inline-flex rounded-lg border border-white/10 bg-slate-900/60 p-1">
-          <TabBtn active={scope === "all"} onClick={() => setScope("all")}>All-Time</TabBtn>
-          <TabBtn active={scope === "daily"} onClick={() => setScope("daily")}>Today</TabBtn>
+          <TabBtn active={scope === "daily"} onClick={() => setScope("daily")}>Daily Puzzle</TabBtn>
+          <TabBtn active={scope === "all"} onClick={() => setScope("all")}>All-Time (Free Play)</TabBtn>
         </div>
+        {scope === "daily" && (
+          <div className="mt-3 flex items-center gap-3 text-xs text-slate-400">
+            <span>Puzzle date: <span className="font-mono text-emerald-300">{daily?.date ?? "—"}</span></span>
+            <span>Next puzzle in <span className="font-mono text-emerald-300">{formatCountdown(countdown)}</span></span>
+          </div>
+        )}
         <div className="mt-4">
           {isLoading ? (
             <p className="text-sm text-slate-400">Loading…</p>
