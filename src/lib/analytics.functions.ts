@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
+import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import type { Database } from "@/integrations/supabase/types";
 
 const eventInput = z.object({
   event: z.string().min(1).max(64),
@@ -11,8 +13,11 @@ export const logEvent = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => eventInput.parse(data))
   .handler(async ({ data }) => {
     try {
-      const { getSupabaseAdmin } = await import("@/lib/supabase-clients");
-      const supabaseAdmin = getSupabaseAdmin();
+      const supabaseAdmin = createClient<Database>(
+        process.env.SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
+      );
       await supabaseAdmin.from("analytics_events").insert({
         event: data.event,
         session_id: data.sessionId,

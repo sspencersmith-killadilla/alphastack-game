@@ -1,31 +1,42 @@
-The publish error shown is the generic build wrapper, not the real root cause. The latest concrete error in the app logs is:
+## What is going on
 
-```text
-Invalid server function ID: src_lib_leaderboard_functions_ts--getLeaderboard_createServerFn_handler
-plugin: tanstack-start-core:validate-server-fn-id
-```
+This does not look like a random Lovable publishing outage from the message alone. The text you keep seeing is the generic build wrapper from Vite/Rolldown. It hides the actual failing module unless we inspect the full local build/dev logs.
 
-This means the published/dev build is trying to call a server-function endpoint that the current server-function manifest does not recognize. In practical terms, the app’s client bundle and server-function registration are out of sync around `getLeaderboard` in `src/lib/leaderboard.functions.ts`. Earlier logs also showed a now-addressed unresolved logo asset import, but the remaining signal is the invalid server-function ID.
+From the project history, the last concrete root cause was around TanStack server-function extraction/registration for the leaderboard and analytics code. The app then had multiple attempted fixes, but the code still contains a high-risk pattern for this stack: server-function files dynamically importing a shared backend-client module that reads server environment variables and creates backend clients. That can pass preview/runtime checks but still fail during publish bundling.
 
-Plan to fix:
+## Goal
 
-1. **Capture the current build error in build mode**
-   - Run the project build once to get the full untruncated error output.
-   - Confirm whether publish is still failing on the invalid server-function ID or on a newer compile error.
+Make publishing boring again by removing the fragile server-function/bundler patterns and validating against the same kind of production build that publish runs.
 
-2. **Stabilize server-function registration**
-   - Inspect `src/lib/leaderboard.functions.ts`, `src/components/game/TopScoresPanel.tsx`, `src/routes/leaderboard.tsx`, and `src/components/game/GameOverModal.tsx` call sites.
-   - If needed, adjust calls to use the canonical TanStack Start server-function pattern so the server-function transformer can register `getLeaderboard`, `submitScore`, and `qualifiesForLeaderboard` consistently.
+## Plan
 
-3. **Remove/generated-file risk**
-   - Do not hand-edit `src/routeTree.gen.ts`; it is generated and can be overwritten during publish.
-   - If any required type registration was previously placed there, move it into a user-owned file such as `src/router.tsx` or `src/start.ts`.
+1. **Capture the actual build error**
+   - Run the production build locally and save the full output instead of relying on the truncated publish dialog.
+   - Check the newest server/dev logs for the specific module, import, or server-function ID that fails.
 
-4. **Clean up remaining publish risks**
-   - Keep the shared `ALPHASTACK_LOGO_URL` approach so publish no longer depends on fragile direct `.asset.json` imports.
-   - Move any custom backend client logic out of auto-generated integration files if it is still required, so future backend refreshes do not silently break production.
+2. **Simplify server-function modules**
+   - Keep `*.functions.ts` files as thin server-function declarations.
+   - Move validation constants, profanity checks, scoring checks, and backend client creation into imported helper modules where the TanStack server-function splitter can handle them reliably.
+   - Avoid dynamic imports from inside handlers unless they are strictly needed.
 
-5. **Verify**
-   - Re-run the production build.
-   - Check the app no longer emits `Invalid server function ID` for leaderboard calls.
-   - Then publish again once the build passes.
+3. **Fix backend client usage for publish**
+   - Replace the custom shared `src/lib/supabase-clients.ts` pattern if it is implicated by the build.
+   - For public leaderboard reads, create the publishable backend client directly inside the server-side helper/function path using server env vars.
+   - For score submission and analytics writes, load privileged backend access only inside server-only code, not from modules that can enter the client/router graph.
+
+4. **Stabilize call sites**
+   - Keep component calls using `useServerFn(...)` for `getLeaderboard`, `qualifiesForLeaderboard`, `submitScore`, and analytics logging.
+   - Ensure no loaders or client modules call protected/privileged backend logic during SSR prerender.
+
+5. **Remove stale/generated risks**
+   - Do not edit `src/routeTree.gen.ts`.
+   - Remove any stale references to deleted `.asset.json` files or old server-client helper paths.
+
+6. **Validate before calling it fixed**
+   - Re-run the production build and confirm it exits successfully.
+   - Open `/` and `/leaderboard` in the preview and verify no server-function ID errors or failed leaderboard requests.
+   - Only after that, publish again.
+
+## Expected result
+
+The publish failure should resolve once the full build passes locally. If the full build still fails with only an internal Rolldown stack and no project file, then we will escalate it as a platform/bundler issue with the captured full log. Right now, the evidence points more strongly to a project-level bundling/server-function extraction issue than a general Lovable outage.
