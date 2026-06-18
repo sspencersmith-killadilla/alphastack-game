@@ -60,7 +60,7 @@ export const submitScore = createServerFn({ method: "POST" })
     if (score > maxScore) return { ok: false, reason: "Score exceeds maximum." };
 
     // Idempotency + service role insert
-    const { getSupabaseAdmin } = await import("@/lib/supabase-clients.server");
+    const { getSupabaseAdmin } = await import("@/lib/supabase-clients");
     const supabaseAdmin = getSupabaseAdmin();
 
     const { data: existing } = await supabaseAdmin
@@ -108,7 +108,7 @@ export type LeaderboardRow = {
 export const getLeaderboard = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => scopeInput.parse(data))
   .handler(async ({ data }): Promise<LeaderboardRow[]> => {
-    const { createServerPublicClient } = await import("@/lib/supabase-clients.server");
+    const { createServerPublicClient } = await import("@/lib/supabase-clients");
     const supabase = createServerPublicClient();
     let q = supabase
       .from("scores")
@@ -132,7 +132,7 @@ export const qualifiesForLeaderboard = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => qualifyInput.parse(data))
   .handler(async ({ data }): Promise<{ qualifies: boolean; cutoff: number }> => {
     if (data.score <= 0) return { qualifies: false, cutoff: 0 };
-    const { createServerPublicClient } = await import("@/lib/supabase-clients.server");
+    const { createServerPublicClient } = await import("@/lib/supabase-clients");
     const supabase = createServerPublicClient();
     const { data: rows } = await supabase
       .from("scores")
