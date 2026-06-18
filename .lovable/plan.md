@@ -1,42 +1,33 @@
-## What is going on
-
-This does not look like a random Lovable publishing outage from the message alone. The text you keep seeing is the generic build wrapper from Vite/Rolldown. It hides the actual failing module unless we inspect the full local build/dev logs.
-
-From the project history, the last concrete root cause was around TanStack server-function extraction/registration for the leaderboard and analytics code. The app then had multiple attempted fixes, but the code still contains a high-risk pattern for this stack: server-function files dynamically importing a shared backend-client module that reads server environment variables and creates backend clients. That can pass preview/runtime checks but still fail during publish bundling.
-
 ## Goal
-
-Make publishing boring again by removing the fragile server-function/bundler patterns and validating against the same kind of production build that publish runs.
+Prevent false confidence from local builds by evaluating the app with the same production mode and diagnostics needed to catch publish-time Rolldown/Vite failures before clicking Publish.
 
 ## Plan
+1. **Capture the real build error**
+   - Run the production build with verbose logging and output redirection so the full Rolldown `errors` payload is preserved instead of truncated.
+   - Inspect the full log for the first actionable module/import/plugin error above the generic Rolldown stack.
 
-1. **Capture the actual build error**
-   - Run the production build locally and save the full output instead of relying on the truncated publish dialog.
-   - Check the newest server/dev logs for the specific module, import, or server-function ID that fails.
+2. **Add a repeatable validation command**
+   - Create a project script such as `validate:publish` that runs the production build in a clean, publish-like mode and writes logs to a predictable diagnostics file.
+   - Include environment details and dependency versions in the log so future failures can be compared against the publishing environment.
 
-2. **Simplify server-function modules**
-   - Keep `*.functions.ts` files as thin server-function declarations.
-   - Move validation constants, profanity checks, scoring checks, and backend client creation into imported helper modules where the TanStack server-function splitter can handle them reliably.
-   - Avoid dynamic imports from inside handlers unless they are strictly needed.
+3. **Add a production smoke test**
+   - After a successful production build, boot the built app locally and request the key routes: `/`, `/play`, and `/leaderboard`.
+   - Fail the validation if any route returns a server error or if the app does not start.
 
-3. **Fix backend client usage for publish**
-   - Replace the custom shared `src/lib/supabase-clients.ts` pattern if it is implicated by the build.
-   - For public leaderboard reads, create the publishable backend client directly inside the server-side helper/function path using server env vars.
-   - For score submission and analytics writes, load privileged backend access only inside server-only code, not from modules that can enter the client/router graph.
+4. **Document the workflow**
+   - Add concise instructions to the project plan/docs explaining: run `validate:publish`, inspect the saved log if it fails, then publish only after the build and smoke test pass.
 
-4. **Stabilize call sites**
-   - Keep component calls using `useServerFn(...)` for `getLeaderboard`, `qualifiesForLeaderboard`, `submitScore`, and analytics logging.
-   - Ensure no loaders or client modules call protected/privileged backend logic during SSR prerender.
+## Technical notes
+- The screenshot shows the publish system still failing at the generic Rolldown wrapper, which means we need the *full* build log, not just the final stack.
+- The previous local `bun run build` result may not be sufficient if it did not preserve the full diagnostic payload or did not smoke-test the production output.
+- I will not change app behavior; this plan only adds diagnostics/validation unless the captured full error points to a specific code fix.
 
-5. **Remove stale/generated risks**
-   - Do not edit `src/routeTree.gen.ts`.
-   - Remove any stale references to deleted `.asset.json` files or old server-client helper paths.
+## Publish validation workflow
 
-6. **Validate before calling it fixed**
-   - Re-run the production build and confirm it exits successfully.
-   - Open `/` and `/leaderboard` in the preview and verify no server-function ID errors or failed leaderboard requests.
-   - Only after that, publish again.
+Before using the Publish button, run:
 
-## Expected result
+```bash
+bun run validate:publish
+```
 
-The publish failure should resolve once the full build passes locally. If the full build still fails with only an internal Rolldown stack and no project file, then we will escalate it as a platform/bundler issue with the captured full log. Right now, the evidence points more strongly to a project-level bundling/server-function extraction issue than a general Lovable outage.
+This command runs the production build, saves the full non-truncated output to `.lovable/diagnostics/publish-validation.log`, starts a local production preview, and checks `/`, `/play`, and `/leaderboard`. If publishing fails with the generic Rolldown/Vite wrapper again, use the saved diagnostics log to find the first project-level error above the wrapper stack.
