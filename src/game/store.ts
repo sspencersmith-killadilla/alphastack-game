@@ -329,8 +329,16 @@ function lockAndAdvance(
   const { board: cleared, cleared: rowsCleared, solvedTilesCleared } = clearRows(newBoard);
   if (rowsCleared > 0) sfx.lineClear(rowsCleared);
 
-  const tilePoints = solvedTilesCleared * 10 * s.level;
-  const rowBonus = rowsCleared > 0 ? solvedTilesCleared * rowsCleared * 5 : 0;
+  // Daily difficulty multiplier: scales clear rewards with how deep into the
+  // daily ramp the player is (1× early, up to 4× late). Free play is
+  // unaffected so the all-time leaderboard formula stays identical.
+  // pieceIndex was incremented twice at startGame (first + next preview), so
+  // the piece that just locked corresponds to index (pieceIndex - 2).
+  const dailyMult =
+    s.mode === "daily" ? dailyDifficultyTier(Math.max(0, pieceIndex - 2)) : 1;
+  const tilePoints = solvedTilesCleared * 10 * s.level * dailyMult;
+  const rowBonus =
+    rowsCleared > 0 ? solvedTilesCleared * rowsCleared * 5 * dailyMult : 0;
   const newScore = s.score + tilePoints + rowBonus;
   const newLines = s.lines + rowsCleared;
   const newLevel = 1 + Math.floor(newLines / 10);
