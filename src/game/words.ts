@@ -31,3 +31,30 @@ export function randomLength(rng: () => number = Math.random): 4 | 5 | 6 {
   if (r < 0.85) return 5;
   return 6;
 }
+
+// Daily difficulty ramp: pieces start short/easy and grow toward longer/harder
+// as the run progresses. `index` is the 0-based piece number in the run.
+// 0–4: mostly 4-letter, occasional 5
+// 5–11: balanced 4/5, rare 6
+// 12–19: 5-heavy with regular 6
+// 20+:  mostly 5/6, longer words dominate
+export function rampLength(index: number, rng: () => number): 4 | 5 | 6 {
+  const r = rng();
+  if (index < 5) {
+    if (r < 0.85) return 4;
+    return 5;
+  }
+  if (index < 12) {
+    if (r < 0.5) return 4;
+    if (r < 0.92) return 5;
+    return 6;
+  }
+  if (index < 20) {
+    if (r < 0.2) return 4;
+    if (r < 0.7) return 5;
+    return 6;
+  }
+  if (r < 0.1) return 4;
+  if (r < 0.5) return 5;
+  return 6;
+}
