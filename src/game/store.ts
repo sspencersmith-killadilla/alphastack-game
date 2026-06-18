@@ -15,10 +15,12 @@ import {
 } from "./engine";
 import { randomShape, type Shape } from "./shapes";
 import { isRealWord, randomAnswer, randomLength } from "./words";
+import { createDailyRng, getDailySeed } from "./daily";
 import { sfx, unlockAudio } from "@/lib/audio";
 import { newClientToken, track } from "@/lib/analytics-client";
 
 export type Phase = "menu" | "guessing" | "placing" | "locking" | "paused" | "gameover";
+export type Mode = "free" | "daily";
 
 export type GuessRow = { letters: string; feedback: LetterFeedback[] };
 
@@ -27,6 +29,8 @@ type NextPreview = { shape: Shape; word: string; length: 4 | 5 | 6 };
 type State = {
   phase: Phase;
   prevPhase: Phase | null;
+  mode: Mode;
+  dailyDate: string | null;
   board: Board;
   active: Piece | null;
   next: NextPreview | null;
@@ -52,7 +56,7 @@ type State = {
 };
 
 type Actions = {
-  startGame: () => void;
+  startGame: (opts?: { mode?: Mode }) => void;
   typeLetter: (l: string) => void;
   backspace: () => void;
   submitGuess: () => void;
@@ -80,11 +84,18 @@ function saveBest(v: number) {
   window.localStorage.setItem(BEST_KEY, String(v));
 }
 
-function makeNext(): NextPreview {
-  const length = randomLength();
-  const word = randomAnswer(length);
-  const shape = randomShape(length);
+function makeNext(rng: () => number = Math.random): NextPreview {
+  const length = randomLength(rng);
+  const word = randomAnswer(length, rng);
+  const shape = randomShape(length, rng);
   return { shape, word, length };
+}
+
+// Map mode → rng for the active run. Recomputed at startGame; daily reuses
+// a single seeded PRNG so the *sequence* is deterministic across players.
+let activeRng: () => number = Math.random;
+export function currentRng(): () => number {
+  return activeRng;
 }
 
 function blankKeyboard(): Record<string, LetterFeedback | undefined> {
@@ -109,6 +120,8 @@ function mergeKeyboard(
 export const useGame = create<State & Actions>((set, get) => ({
   phase: "menu",
   prevPhase: null,
+  mode: "free",
+  dailyDate: null,
   board: emptyBoard(),
   active: null,
   next: null,
@@ -131,16 +144,21 @@ export const useGame = create<State & Actions>((set, get) => ({
   clientToken: "",
   startedAt: 0,
 
-  startGame: () => {
-    const first = makeNext();
-    const second = makeNext();
+  startGame: (opts) => {
+    const mode: Mode = opts?.mode ?? "free";
+    const dailyDate = mode === "daily" ? getDailySeed() : null;
+    activeRng = mode === "daily" ? createDailyRng(`alphastack:${dailyDate}`) : Math.random;
+    const first = makeNext(activeRng);
+    const second = makeNext(activeRng);
     const piece = spawnPiece(first.shape, first.word);
     unlockAudio();
     const token = newClientToken();
-    track("game_start");
+    track("game_start", { mode });
     set({
       phase: "guessing",
       prevPhase: null,
+      mode,
+      dailyDate,
       board: emptyBoard(),
       active: piece,
       next: second,
@@ -303,10 +321,7 @@ function lockAndAdvance(
   // spawn next
   const nextPreview = s.next!;
   const newPiece = spawnPiece(nextPreview.shape, nextPreview.word);
-  const afterNext = (() => {
-    const length = randomLength();
-    return { shape: randomShape(length), word: randomAnswer(length), length };
-  })();
+  const afterNext = makeNext(activeRng);
 
   // game over checks
   const stackTopped = collides(cleared, newPiece, 0, 0);
