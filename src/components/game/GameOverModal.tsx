@@ -120,10 +120,10 @@ export function GameOverModal() {
   if (phase !== "gameover") return null;
 
   const canSubmit = /^[A-Z]{3}$/.test(initials.toUpperCase());
-  // Daily: always show the form so every player can post their attempt.
-  // Free play: only when they crack the top 100.
-  const showInitialsForm =
-    !submitted && score > 0 && (mode === "daily" ? true : !!qualify?.qualifies);
+  // Always show the form when there's a score — server validates and returns
+  // a rank. Gating on a separate qualify query meant users saw no input box
+  // when that query was still loading or had failed.
+  const showInitialsForm = !submitted && score > 0;
   const top10 = mode === "daily" ? dailyTop10 : freeTop10;
 
   return (
