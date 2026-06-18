@@ -39,7 +39,7 @@ function Home() {
         </Link>
       </div>
       <div className="mt-10 grid max-w-2xl grid-cols-1 gap-3 text-sm text-slate-400 sm:grid-cols-3">
-        <Tip emoji="🟩" text="Guess the word with Wordle-style hints." />
+        <Tip emoji="🟩" text="Guess the word- get the hints." />
         <Tip emoji="🧩" text="Solve it, then steer the piece into place." />
         <Tip emoji="🏆" text="Only solved tiles score when rows clear." />
       </div>
