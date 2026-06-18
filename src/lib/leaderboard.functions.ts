@@ -34,7 +34,7 @@ export type SubmitResult =
   | { ok: false; reason: string };
 
 export const submitScore = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => submitInput.parse(data))
+  .validator((data: unknown) => submitInput.parse(data))
   .handler(async ({ data }): Promise<SubmitResult> => {
     const { initials, score, lines, level, wordsSolved, durationSeconds, clientToken } = data;
 
@@ -111,7 +111,7 @@ export type LeaderboardRow = {
 };
 
 export const getLeaderboard = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => scopeInput.parse(data))
+  .validator((data: unknown) => scopeInput.parse(data))
   .handler(async ({ data }): Promise<LeaderboardRow[]> => {
     const supabase = createClient<Database>(
       process.env.SUPABASE_URL!,
@@ -137,7 +137,7 @@ const qualifyInput = z.object({ score: z.number().int().min(0) });
 
 // Returns true when the score would land in the all-time top 100.
 export const qualifiesForLeaderboard = createServerFn({ method: "GET" })
-  .inputValidator((data: unknown) => qualifyInput.parse(data))
+  .validator((data: unknown) => qualifyInput.parse(data))
   .handler(async ({ data }): Promise<{ qualifies: boolean; cutoff: number }> => {
     if (data.score <= 0) return { qualifies: false, cutoff: 0 };
     const supabase = createClient<Database>(
