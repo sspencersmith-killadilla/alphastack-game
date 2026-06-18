@@ -354,6 +354,7 @@ function lockAndAdvance(
     isNewBest,
     guesses: [],
     currentGuess: "",
+    keyboard: blankKeyboard(),
     active: dead ? null : newPiece,
     next: dead ? null : afterNext,
     phase: dead ? "gameover" : "guessing",
