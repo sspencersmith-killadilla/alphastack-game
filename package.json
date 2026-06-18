@@ -7,6 +7,7 @@
     "dev": "vite dev",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "validate:publish": "python3 scripts/validate_publish.py",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write ."
