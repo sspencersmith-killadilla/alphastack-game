@@ -89,6 +89,16 @@ function saveBest(v: number) {
 let pieceIndex = 0;
 let rampMode: Mode = "free";
 
+// Daily difficulty tier — matches the rampLength thresholds in words.ts.
+// Returned as a multiplier applied to scoring when a clear happens in daily
+// mode, so deeper-in-the-run clears (with longer/harder words) are worth more.
+export function dailyDifficultyTier(index: number): 1 | 2 | 3 | 4 {
+  if (index < 5) return 1;
+  if (index < 12) return 2;
+  if (index < 20) return 3;
+  return 4;
+}
+
 function makeNext(rng: () => number = Math.random): NextPreview {
   const length =
     rampMode === "daily" ? rampLength(pieceIndex, rng) : randomLength(rng);
