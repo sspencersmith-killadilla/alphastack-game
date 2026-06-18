@@ -80,7 +80,7 @@ export function GameOverModal() {
 
   const { data: dailyTop10 = [] } = useQuery({
     queryKey: ["daily-leaderboard", dailyDate ?? "", 10],
-    queryFn: () => fetchDailyLeaderboard({ data: { limit: 10 } }),
+    queryFn: async () => (await fetchDailyLeaderboard({ data: { limit: 10 } })).rows,
     enabled: phase === "gameover" && mode === "daily",
   });
 
