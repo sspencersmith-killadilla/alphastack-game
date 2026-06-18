@@ -14,7 +14,7 @@ import {
   tryRotate,
 } from "./engine";
 import { randomShape, type Shape } from "./shapes";
-import { isRealWord, randomAnswer, randomLength } from "./words";
+import { isRealWord, rampLength, randomAnswer, randomLength } from "./words";
 import { createDailyRng, getDailySeed } from "./daily";
 import { sfx, unlockAudio } from "@/lib/audio";
 import { newClientToken, track } from "@/lib/analytics-client";
@@ -84,8 +84,15 @@ function saveBest(v: number) {
   window.localStorage.setItem(BEST_KEY, String(v));
 }
 
+// Piece index within the current run. Used by daily mode to ramp difficulty
+// (short/easy words first, longer/harder words later). Reset in startGame.
+let pieceIndex = 0;
+let rampMode: Mode = "free";
+
 function makeNext(rng: () => number = Math.random): NextPreview {
-  const length = randomLength(rng);
+  const length =
+    rampMode === "daily" ? rampLength(pieceIndex, rng) : randomLength(rng);
+  pieceIndex++;
   const word = randomAnswer(length, rng);
   const shape = randomShape(length, rng);
   return { shape, word, length };
@@ -148,6 +155,8 @@ export const useGame = create<State & Actions>((set, get) => ({
     const mode: Mode = opts?.mode ?? "free";
     const dailyDate = mode === "daily" ? getDailySeed() : null;
     activeRng = mode === "daily" ? createDailyRng(`alphastack:${dailyDate}`) : Math.random;
+    rampMode = mode;
+    pieceIndex = 0;
     const first = makeNext(activeRng);
     const second = makeNext(activeRng);
     const piece = spawnPiece(first.shape, first.word);
