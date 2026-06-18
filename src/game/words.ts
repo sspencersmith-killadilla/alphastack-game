@@ -27,13 +27,13 @@ export function isRealWord(word: string): boolean {
   return false;
 }
 
-export function randomAnswer(length: 4 | 5 | 6): string {
+export function randomAnswer(length: 4 | 5 | 6, rng: () => number = Math.random): string {
   const list = length === 4 ? WORDS_4 : length === 5 ? WORDS_5 : WORDS_6;
-  return list[Math.floor(Math.random() * list.length)];
+  return list[Math.floor(rng() * list.length)];
 }
 
-export function randomLength(): 4 | 5 | 6 {
-  const r = Math.random();
+export function randomLength(rng: () => number = Math.random): 4 | 5 | 6 {
+  const r = rng();
   if (r < 0.45) return 4;
   if (r < 0.85) return 5;
   return 6;
