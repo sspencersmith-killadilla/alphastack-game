@@ -8,6 +8,10 @@ import {
   qualifiesForLeaderboard,
   submitScore,
 } from "@/lib/leaderboard.functions";
+import {
+  getDailyLeaderboard,
+  submitDailyScore,
+} from "@/lib/daily-leaderboard.functions";
 import { LeaderboardList } from "./LeaderboardList";
 import { track } from "@/lib/analytics-client";
 import { sfx } from "@/lib/audio";
@@ -23,6 +27,8 @@ export function GameOverModal() {
   const wordsSolved = useGame((s) => s.wordsSolved);
   const restart = useGame((s) => s.startGame);
   const dismiss = useGame((s) => s.dismissGameOver);
+  const mode = useGame((s) => s.mode);
+  const dailyDate = useGame((s) => s.dailyDate);
   const clientToken = useGame((s) => s.clientToken);
   const startedAt = useGame((s) => s.startedAt);
   const isNewBest = useGame((s) => s.isNewBest);
@@ -31,6 +37,8 @@ export function GameOverModal() {
   const fetchLeaderboard = useServerFn(getLeaderboard);
   const checkQualifies = useServerFn(qualifiesForLeaderboard);
   const saveScore = useServerFn(submitScore);
+  const saveDailyScore = useServerFn(submitDailyScore);
+  const fetchDailyLeaderboard = useServerFn(getDailyLeaderboard);
   const [initials, setInitials] = useState("");
   const [submitted, setSubmitted] = useState<{ rank: number | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -61,29 +69,36 @@ export function GameOverModal() {
   const { data: qualify } = useQuery({
     queryKey: ["qualifies", score, clientToken],
     queryFn: () => checkQualifies({ data: { score } }),
-    enabled: phase === "gameover" && score > 0,
+    enabled: phase === "gameover" && mode === "free" && score > 0,
   });
 
-  const { data: top10 = [] } = useQuery({
+  const { data: freeTop10 = [] } = useQuery({
     queryKey: ["leaderboard", "all", 10],
     queryFn: () => fetchLeaderboard({ data: { scope: "all", limit: 10 } }),
-    enabled: phase === "gameover",
+    enabled: phase === "gameover" && mode === "free",
+  });
+
+  const { data: dailyTop10 = [] } = useQuery({
+    queryKey: ["daily-leaderboard", dailyDate ?? "", 10],
+    queryFn: () => fetchDailyLeaderboard({ data: { limit: 10 } }),
+    enabled: phase === "gameover" && mode === "daily",
   });
 
   const submitMut = useMutation({
     mutationFn: async () => {
       const duration = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
-      return saveScore({
-        data: {
-          initials: initials.toUpperCase(),
-          score,
-          lines,
-          level,
-          wordsSolved,
-          durationSeconds: duration,
-          clientToken,
-        },
-      });
+      const payload = {
+        initials: initials.toUpperCase(),
+        score,
+        lines,
+        level,
+        wordsSolved,
+        durationSeconds: duration,
+        clientToken,
+      };
+      return mode === "daily"
+        ? saveDailyScore({ data: payload })
+        : saveScore({ data: payload });
     },
     onSuccess: (res) => {
       if (!res.ok) {
@@ -93,21 +108,33 @@ export function GameOverModal() {
       setSubmitted({ rank: res.rank });
       if (typeof window !== "undefined") {
         window.localStorage.setItem(INITIALS_KEY, initials.toUpperCase());
+        if (mode === "daily" && dailyDate) {
+          window.localStorage.setItem(`alphastack:daily:${dailyDate}`, "done");
+        }
       }
-      track("score_submitted", { score, rank: res.rank });
-      void qc.invalidateQueries({ queryKey: ["leaderboard"] });
+      track("score_submitted", { score, rank: res.rank, mode });
+      void qc.invalidateQueries({ queryKey: mode === "daily" ? ["daily-leaderboard"] : ["leaderboard"] });
     },
   });
 
   if (phase !== "gameover") return null;
 
   const canSubmit = /^[A-Z]{3}$/.test(initials.toUpperCase());
-  const showInitialsForm = qualify?.qualifies && !submitted && score > 0;
+  // Daily: always show the form so every player can post their attempt.
+  // Free play: only when they crack the top 100.
+  const showInitialsForm =
+    !submitted && score > 0 && (mode === "daily" ? true : !!qualify?.qualifies);
+  const top10 = mode === "daily" ? dailyTop10 : freeTop10;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm">
       <div className="my-8 w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-6 text-center shadow-2xl">
         <h2 className="text-3xl font-extrabold text-white">Game Over</h2>
+        {mode === "daily" && dailyDate && (
+          <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-emerald-300">
+            Daily Puzzle · {dailyDate}
+          </div>
+        )}
         {isNewBest && (
           <div className="mt-2 animate-pulse text-sm font-bold uppercase tracking-widest text-amber-300">
             ★ New Personal Best ★
@@ -123,7 +150,7 @@ export function GameOverModal() {
         {showInitialsForm && (
           <div className="mt-6 rounded-xl border border-amber-400/40 bg-amber-500/10 p-4">
             <div className="text-xs font-bold uppercase tracking-widest text-amber-300">
-              🏆 You made the top 100!
+              {mode === "daily" ? "🗓️ Post your daily score" : "🏆 You made the top 100!"}
             </div>
             <div className="mt-1 text-xs text-slate-300">Enter your initials</div>
             <input
@@ -156,12 +183,14 @@ export function GameOverModal() {
         {submitted && (
           <div className="mt-4 rounded-xl border border-emerald-400/40 bg-emerald-500/10 p-3 text-sm text-emerald-200">
             {submitted.rank
-              ? <>Submitted! You're <span className="font-extrabold">#{submitted.rank}</span> all-time.</>
+              ? mode === "daily"
+                ? <>Submitted! You're <span className="font-extrabold">#{submitted.rank}</span> today.</>
+                : <>Submitted! You're <span className="font-extrabold">#{submitted.rank}</span> all-time.</>
               : <>Score already submitted.</>}
           </div>
         )}
 
-        {qualify && !qualify.qualifies && score > 0 && (
+        {mode === "free" && qualify && !qualify.qualifies && score > 0 && (
           <p className="mt-4 text-xs text-slate-400">
             Beat <span className="font-bold text-slate-200">{qualify.cutoff.toLocaleString()}</span> to reach the leaderboard.
           </p>
@@ -169,18 +198,30 @@ export function GameOverModal() {
 
         {top10.length > 0 && (
           <div className="mt-5 text-left">
-            <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-400">Top 10</div>
+            <div className="mb-2 text-xs font-bold uppercase tracking-widest text-slate-400">
+              {mode === "daily" ? "Today's Top 10" : "Top 10"}
+            </div>
             <LeaderboardList rows={top10.slice(0, 10)} compact />
           </div>
         )}
 
         <div className="mt-6 flex gap-2">
-          <button
-            className="flex-1 rounded-lg bg-emerald-500 px-4 py-2 font-bold text-slate-900 hover:bg-emerald-400"
-            onClick={restart}
-          >
-            Play Again
-          </button>
+          {mode === "daily" ? (
+            <Link
+              to="/"
+              className="flex-1 rounded-lg bg-emerald-500 px-4 py-2 font-bold text-slate-900 hover:bg-emerald-400"
+              onClick={dismiss}
+            >
+              Back to Home
+            </Link>
+          ) : (
+            <button
+              className="flex-1 rounded-lg bg-emerald-500 px-4 py-2 font-bold text-slate-900 hover:bg-emerald-400"
+              onClick={() => restart({ mode: "free" })}
+            >
+              Play Again
+            </button>
+          )}
           <Link
             to="/leaderboard"
             className="rounded-lg border border-white/10 bg-slate-800 px-4 py-2 font-bold text-white hover:bg-slate-700"
