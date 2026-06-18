@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import alphastackLogo from "../assets/alphastack-logo.png.asset.json";
 
 function NotFoundComponent() {
   return (
@@ -87,8 +88,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "AlphaStack" },
       { name: "twitter:description", content: "AlphaStack is a word puzzle game combining Wordle and Tetris mechanics." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/XBgkVpcnrnhGl7syRMV61RPcE2s1/social-images/social-1781797353452-b5afd01b6_logo.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/XBgkVpcnrnhGl7syRMV61RPcE2s1/social-images/social-1781797353452-b5afd01b6_logo.webp" },
+      { property: "og:image", content: `https://alphastackgame.com${alphastackLogo.url}` },
+      { name: "twitter:image", content: `https://alphastackgame.com${alphastackLogo.url}` },
     ],
     links: [
       {
