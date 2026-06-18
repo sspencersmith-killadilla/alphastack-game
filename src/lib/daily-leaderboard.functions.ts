@@ -63,8 +63,10 @@ export const submitDailyScore = createServerFn({ method: "POST" })
       return { ok: false, reason: "Run too short for words solved." };
     }
     const maxTiles = wordsSolved * 6;
-    const maxTilePoints = maxTiles * 10 * level;
-    const maxRowBonus = maxTiles * 4 * 5;
+    // Daily mode applies a difficulty multiplier up to 4× as the run ramps up.
+    const DAILY_MAX_MULT = 4;
+    const maxTilePoints = maxTiles * 10 * level * DAILY_MAX_MULT;
+    const maxRowBonus = maxTiles * 4 * 5 * DAILY_MAX_MULT;
     if (score > maxTilePoints + maxRowBonus) {
       return { ok: false, reason: "Score exceeds maximum." };
     }
