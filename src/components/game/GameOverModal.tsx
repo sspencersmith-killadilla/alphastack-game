@@ -66,6 +66,16 @@ export function GameOverModal() {
     }
   }, [phase, isNewBest]);
 
+  // Mark the daily puzzle as played as soon as the run ends, regardless of
+  // whether the player submits initials. This prevents replaying today's
+  // puzzle by dismissing the modal or refreshing.
+  useEffect(() => {
+    if (phase !== "gameover") return;
+    if (mode !== "daily" || !dailyDate) return;
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(`alphastack:daily:${dailyDate}`, "done");
+  }, [phase, mode, dailyDate]);
+
   const { data: qualify } = useQuery({
     queryKey: ["qualifies", score, clientToken],
     queryFn: () => checkQualifies({ data: { score } }),
