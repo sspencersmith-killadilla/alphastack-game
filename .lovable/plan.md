@@ -21,3 +21,13 @@ Prevent false confidence from local builds by evaluating the app with the same p
 - The screenshot shows the publish system still failing at the generic Rolldown wrapper, which means we need the *full* build log, not just the final stack.
 - The previous local `bun run build` result may not be sufficient if it did not preserve the full diagnostic payload or did not smoke-test the production output.
 - I will not change app behavior; this plan only adds diagnostics/validation unless the captured full error points to a specific code fix.
+
+## Publish validation workflow
+
+Before using the Publish button, run:
+
+```bash
+bun run validate:publish
+```
+
+This command runs the production build, saves the full non-truncated output to `.lovable/diagnostics/publish-validation.log`, starts a local production preview, and checks `/`, `/play`, and `/leaderboard`. If publishing fails with the generic Rolldown/Vite wrapper again, use the saved diagnostics log to find the first project-level error above the wrapper stack.
