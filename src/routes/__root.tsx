@@ -90,6 +90,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:description", content: "AlphaStack is a word puzzle game combining Wordle and Tetris mechanics." },
       { property: "og:image", content: `https://alphastackgame.com${alphastackLogo.url}` },
       { name: "twitter:image", content: `https://alphastackgame.com${alphastackLogo.url}` },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9b22f2d3-d397-425e-a205-3398436f2146/id-preview-08e9615b--73d83754-d504-419b-a31d-027e38d2b2eb.lovable.app-1781804018011.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9b22f2d3-d397-425e-a205-3398436f2146/id-preview-08e9615b--73d83754-d504-419b-a31d-027e38d2b2eb.lovable.app-1781804018011.png" },
     ],
     links: [
       {
