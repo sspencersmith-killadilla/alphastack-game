@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 // Server-side scoring formula MUST match client engine (engine.ts lockAndAdvance).
@@ -32,14 +31,6 @@ export type SubmitResult =
   | { ok: true; rank: number | null }
   | { ok: false; reason: string };
 
-function serverPublicClient() {
-  return createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-  );
-}
-
 export const submitScore = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => submitInput.parse(data))
   .handler(async ({ data }): Promise<SubmitResult> => {
@@ -69,7 +60,8 @@ export const submitScore = createServerFn({ method: "POST" })
     if (score > maxScore) return { ok: false, reason: "Score exceeds maximum." };
 
     // Idempotency + service role insert
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { getSupabaseAdmin } = await import("@/lib/supabase-clients.server");
+    const supabaseAdmin = getSupabaseAdmin();
 
     const { data: existing } = await supabaseAdmin
       .from("scores")
@@ -116,7 +108,8 @@ export type LeaderboardRow = {
 export const getLeaderboard = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => scopeInput.parse(data))
   .handler(async ({ data }): Promise<LeaderboardRow[]> => {
-    const supabase = serverPublicClient();
+    const { createServerPublicClient } = await import("@/lib/supabase-clients.server");
+    const supabase = createServerPublicClient();
     let q = supabase
       .from("scores")
       .select("id, initials, score, lines, level, words_solved, created_at")
@@ -139,7 +132,8 @@ export const qualifiesForLeaderboard = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => qualifyInput.parse(data))
   .handler(async ({ data }): Promise<{ qualifies: boolean; cutoff: number }> => {
     if (data.score <= 0) return { qualifies: false, cutoff: 0 };
-    const supabase = serverPublicClient();
+    const { createServerPublicClient } = await import("@/lib/supabase-clients.server");
+    const supabase = createServerPublicClient();
     const { data: rows } = await supabase
       .from("scores")
       .select("score")

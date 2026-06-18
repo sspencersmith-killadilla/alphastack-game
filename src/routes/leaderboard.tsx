@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState, type ReactNode } from "react";
 import { LeaderboardList } from "@/components/game/LeaderboardList";
 import { getLeaderboard } from "@/lib/leaderboard.functions";
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/leaderboard")({
 
 function LeaderboardPage() {
   const [scope, setScope] = useState<"all" | "daily">("all");
+  const fetchLeaderboard = useServerFn(getLeaderboard);
 
   useEffect(() => {
     track("leaderboard_viewed", { scope });
@@ -27,7 +29,7 @@ function LeaderboardPage() {
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["leaderboard", scope],
-    queryFn: () => getLeaderboard({ data: { scope, limit: 50 } }),
+    queryFn: () => fetchLeaderboard({ data: { scope, limit: 50 } }),
   });
 
   return (

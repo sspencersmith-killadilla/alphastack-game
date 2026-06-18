@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useGame } from "@/game/store";
 import {
   getLeaderboard,
@@ -27,6 +28,9 @@ export function GameOverModal() {
   const isNewBest = useGame((s) => s.isNewBest);
 
   const qc = useQueryClient();
+  const fetchLeaderboard = useServerFn(getLeaderboard);
+  const checkQualifies = useServerFn(qualifiesForLeaderboard);
+  const saveScore = useServerFn(submitScore);
   const [initials, setInitials] = useState("");
   const [submitted, setSubmitted] = useState<{ rank: number | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,20 +60,20 @@ export function GameOverModal() {
 
   const { data: qualify } = useQuery({
     queryKey: ["qualifies", score, clientToken],
-    queryFn: () => qualifiesForLeaderboard({ data: { score } }),
+    queryFn: () => checkQualifies({ data: { score } }),
     enabled: phase === "gameover" && score > 0,
   });
 
   const { data: top10 = [] } = useQuery({
     queryKey: ["leaderboard", "all", 10],
-    queryFn: () => getLeaderboard({ data: { scope: "all", limit: 10 } }),
+    queryFn: () => fetchLeaderboard({ data: { scope: "all", limit: 10 } }),
     enabled: phase === "gameover",
   });
 
   const submitMut = useMutation({
     mutationFn: async () => {
       const duration = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
-      return submitScore({
+      return saveScore({
         data: {
           initials: initials.toUpperCase(),
           score,
