@@ -3,7 +3,6 @@ import { createMiddleware } from "@tanstack/react-start";
 type MiddlewareContext = {
   request: Request;
   handlerType?: string;
-  next: () => Promise<unknown> | unknown;
 };
 
 type Matcher<TValue extends string> =
@@ -24,14 +23,14 @@ const csrfSymbol = Symbol.for("tanstack-start:csrf-middleware");
 
 export function createSafeCsrfMiddleware(opts: CsrfOptions = {}) {
   const middleware = createMiddleware().server(async (ctx) => {
-    const csrfCtx = ctx as MiddlewareContext;
+    const csrfCtx = ctx as unknown as MiddlewareContext;
 
     if (opts.filter && !(await opts.filter(csrfCtx))) {
-      return csrfCtx.next();
+      return ctx.next();
     }
 
     if (await isRequestAllowed(opts, csrfCtx)) {
-      return csrfCtx.next();
+      return ctx.next();
     }
 
     if (typeof opts.failureResponse === "function") {
