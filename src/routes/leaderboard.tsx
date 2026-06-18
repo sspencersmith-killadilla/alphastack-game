@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { LeaderboardList } from "@/components/game/LeaderboardList";
 import { getLeaderboard } from "@/lib/leaderboard.functions";
 import { track } from "@/lib/analytics-client";
-import logoAsset from "@/assets/alphastack-logo.png.asset.json";
+import { ALPHASTACK_LOGO_URL } from "@/lib/assets";
 
 export const Route = createFileRoute("/leaderboard")({
   head: () => ({
@@ -34,7 +34,7 @@ function LeaderboardPage() {
     <div className="min-h-screen bg-gradient-to-b from-[#0a1024] via-[#0b1330] to-[#0a1024] text-slate-100">
       <header className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
         <Link to="/" className="flex items-center gap-2">
-          <img src={logoAsset.url} alt="AlphaStack" className="h-9 w-9 rounded-md" />
+          <img src={ALPHASTACK_LOGO_URL} alt="AlphaStack" className="h-9 w-9 rounded-md" />
           <span className="text-xl font-extrabold tracking-tight">
             Alpha<span className="text-emerald-400">Stack</span>
           </span>

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import logoAsset from "@/assets/alphastack-logo.png.asset.json";
 import { TopScoresPanel } from "@/components/game/TopScoresPanel";
+import { ALPHASTACK_LOGO_URL } from "@/lib/assets";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -17,7 +17,7 @@ export const Route = createFileRoute("/")({
 function Home() {
   return (
     <div className="flex min-h-screen flex-col items-center bg-gradient-to-b from-[#0a1024] via-[#0b1330] to-[#0a1024] px-6 py-12 text-center text-slate-100">
-      <img src={logoAsset.url} alt="AlphaStack logo" className="h-32 w-32 rounded-2xl shadow-2xl shadow-black/50" />
+      <img src={ALPHASTACK_LOGO_URL} alt="AlphaStack logo" className="h-32 w-32 rounded-2xl shadow-2xl shadow-black/50" />
       <h1 className="mt-6 text-5xl font-extrabold tracking-tight sm:text-6xl">
         Alpha<span className="text-emerald-400">Stack</span>
       </h1>

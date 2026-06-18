@@ -11,8 +11,8 @@ import { Sidebar } from "@/components/game/Sidebar";
 import { PauseModal } from "@/components/game/PauseModal";
 import { SettingsModal } from "@/components/game/SettingsModal";
 import { WordToast } from "@/components/game/WordToast";
-import logoAsset from "@/assets/alphastack-logo.png.asset.json";
 import { useGame } from "@/game/store";
+import { ALPHASTACK_LOGO_URL } from "@/lib/assets";
 import { useSettings } from "@/lib/settings";
 import { unlockAudio } from "@/lib/audio";
 
@@ -118,7 +118,7 @@ function PlayPage() {
     <div className={`min-h-screen bg-gradient-to-b from-[#0a1024] via-[#0b1330] to-[#0a1024] text-slate-100 ${shake ? "animate-[shake_0.35s]" : ""}`}>
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
         <Link to="/" className="flex items-center gap-2">
-          <img src={logoAsset.url} alt="AlphaStack" className="h-9 w-9 rounded-md" />
+          <img src={ALPHASTACK_LOGO_URL} alt="AlphaStack" className="h-9 w-9 rounded-md" />
           <span className="text-xl font-extrabold tracking-tight">
             Alpha<span className="text-emerald-400">Stack</span>
           </span>
