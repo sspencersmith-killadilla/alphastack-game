@@ -31,6 +31,43 @@ export function Sidebar() {
   );
 }
 
+export function CompactStats() {
+  const score = useGame((s) => s.score);
+  const best = useGame((s) => s.best);
+  const level = useGame((s) => s.level);
+  const lines = useGame((s) => s.lines);
+  const lives = useGame((s) => s.lives);
+  const next = useGame((s) => s.next);
+  return (
+    <div className="flex items-stretch gap-2 overflow-x-auto rounded-lg border border-white/10 bg-slate-900/60 p-2">
+      <MiniStat label="Score" value={score} accent="text-emerald-300" />
+      <MiniStat label="Best" value={best} accent="text-amber-300" />
+      <MiniStat label="Lvl" value={level} accent="text-sky-300" />
+      <MiniStat label="Lines" value={lines} accent="text-violet-300" />
+      <MiniStat
+        label="Lives"
+        value={"♥".repeat(Math.max(0, lives)) || "—"}
+        accent="text-rose-300"
+      />
+      {next && (
+        <div className="ml-auto flex shrink-0 items-center gap-2 rounded-md bg-slate-950/40 px-2">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Next</span>
+          <MiniShape shape={next.shape} length={next.length} cellSize={8} hideLabel />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MiniStat({ label, value, accent }: { label: string; value: number | string; accent: string }) {
+  return (
+    <div className="min-w-[44px] shrink-0 rounded-md bg-slate-950/40 px-2 py-1 text-center">
+      <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{label}</div>
+      <div className={`text-sm font-bold leading-tight ${accent}`}>{value}</div>
+    </div>
+  );
+}
+
 function Stat({ icon, label, value }: { icon: ReactNode; label: string; value: number | string }) {
   return (
     <div className="rounded-lg border border-white/10 bg-slate-900/60 px-3 py-2">
@@ -46,9 +83,13 @@ function Stat({ icon, label, value }: { icon: ReactNode; label: string; value: n
 function MiniShape({
   shape,
   length,
+  cellSize = 14,
+  hideLabel = false,
 }: {
   shape: { cells: { x: number; y: number }[]; color: string };
   length: number;
+  cellSize?: number;
+  hideLabel?: boolean;
 }) {
   const w = Math.max(...shape.cells.map((c) => c.x)) + 1;
   const h = Math.max(...shape.cells.map((c) => c.y)) + 1;
@@ -58,8 +99,8 @@ function MiniShape({
       <div
         className="grid gap-[2px]"
         style={{
-          gridTemplateColumns: `repeat(${w}, 14px)`,
-          gridTemplateRows: `repeat(${h}, 14px)`,
+          gridTemplateColumns: `repeat(${w}, ${cellSize}px)`,
+          gridTemplateRows: `repeat(${h}, ${cellSize}px)`,
         }}
       >
         {Array.from({ length: h }).flatMap((_, y) =>
@@ -72,7 +113,9 @@ function MiniShape({
           )),
         )}
       </div>
-      <div className="text-[10px] uppercase tracking-widest text-slate-500">{length}-letter</div>
+      {!hideLabel && (
+        <div className="text-[10px] uppercase tracking-widest text-slate-500">{length}-letter</div>
+      )}
     </div>
   );
 }

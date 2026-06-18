@@ -8,7 +8,7 @@ import { GameOverModal } from "@/components/game/GameOverModal";
 import { GuessPanel } from "@/components/game/GuessPanel";
 import { HowToPlay } from "@/components/game/HowToPlay";
 import { Keyboard } from "@/components/game/Keyboard";
-import { Sidebar } from "@/components/game/Sidebar";
+import { CompactStats, Sidebar } from "@/components/game/Sidebar";
 import { PauseModal } from "@/components/game/PauseModal";
 import { SettingsModal } from "@/components/game/SettingsModal";
 import { WordToast } from "@/components/game/WordToast";
@@ -167,15 +167,20 @@ function DailyPage() {
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 pb-10 md:grid-cols-[140px_minmax(0,1fr)_300px]">
-        <aside><Sidebar /></aside>
-        <section className="flex justify-center"><Board /></section>
-        <aside className="space-y-4">
-          <GuessPanel />
-          <Keyboard />
-          <Controls />
-          <HowToPlay />
-        </aside>
+      <main className="mx-auto max-w-6xl px-3 pb-10 md:px-4">
+        <div className="mb-3 md:hidden">
+          <CompactStats />
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-[140px_minmax(0,1fr)_300px] md:gap-6">
+          <aside className="hidden md:block"><Sidebar /></aside>
+          <section className="flex justify-center"><Board /></section>
+          <aside className="space-y-4">
+            <GuessPanel />
+            <Keyboard />
+            <Controls />
+            <HowToPlay />
+          </aside>
+        </div>
       </main>
 
       <WordToast />
