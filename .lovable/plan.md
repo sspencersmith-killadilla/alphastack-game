@@ -1,13 +1,31 @@
-The publish error is a generic bundler stack trace. The useful part is in the dev logs: the build cannot resolve this import:
+The publish error shown is the generic build wrapper, not the real root cause. The latest concrete error in the app logs is:
 
-`@/assets/alphastack-logo.png.asset.json`
+```text
+Invalid server function ID: src_lib_leaderboard_functions_ts--getLeaderboard_createServerFn_handler
+plugin: tanstack-start-core:validate-server-fn-id
+```
 
-It is imported by `/`, `/play`, and `/leaderboard`. The file exists in the preview workspace, but this `.asset.json` import style is not being resolved reliably during the production publish build, so Rolldown stops and publish fails.
+This means the published/dev build is trying to call a server-function endpoint that the current server-function manifest does not recognize. In practical terms, the app’s client bundle and server-function registration are out of sync around `getLeaderboard` in `src/lib/leaderboard.functions.ts`. Earlier logs also showed a now-addressed unresolved logo asset import, but the remaining signal is the invalid server-function ID.
 
 Plan to fix:
-1. Replace direct imports of `alphastack-logo.png.asset.json` in route files with a small app-owned logo constant/module, or inline the asset URL string in one shared place.
-2. Update the three routes that use the logo to reference that shared value instead of importing the asset metadata JSON directly.
-3. Check for any remaining `.asset.json` imports so publish cannot fail on the same issue.
-4. Re-run the production build verification after the edit.
 
-This does not change gameplay or backend behavior; it only removes the fragile asset import that is blocking publishing.
+1. **Capture the current build error in build mode**
+   - Run the project build once to get the full untruncated error output.
+   - Confirm whether publish is still failing on the invalid server-function ID or on a newer compile error.
+
+2. **Stabilize server-function registration**
+   - Inspect `src/lib/leaderboard.functions.ts`, `src/components/game/TopScoresPanel.tsx`, `src/routes/leaderboard.tsx`, and `src/components/game/GameOverModal.tsx` call sites.
+   - If needed, adjust calls to use the canonical TanStack Start server-function pattern so the server-function transformer can register `getLeaderboard`, `submitScore`, and `qualifiesForLeaderboard` consistently.
+
+3. **Remove/generated-file risk**
+   - Do not hand-edit `src/routeTree.gen.ts`; it is generated and can be overwritten during publish.
+   - If any required type registration was previously placed there, move it into a user-owned file such as `src/router.tsx` or `src/start.ts`.
+
+4. **Clean up remaining publish risks**
+   - Keep the shared `ALPHASTACK_LOGO_URL` approach so publish no longer depends on fragile direct `.asset.json` imports.
+   - Move any custom backend client logic out of auto-generated integration files if it is still required, so future backend refreshes do not silently break production.
+
+5. **Verify**
+   - Re-run the production build.
+   - Check the app no longer emits `Invalid server function ID` for leaderboard calls.
+   - Then publish again once the build passes.

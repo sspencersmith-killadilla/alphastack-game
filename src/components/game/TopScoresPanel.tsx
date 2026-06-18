@@ -1,12 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { Trophy } from "lucide-react";
 import { getLeaderboard } from "@/lib/leaderboard.functions";
 
 export function TopScoresPanel() {
+  const fetchLeaderboard = useServerFn(getLeaderboard);
   const { data: rows = [] } = useQuery({
     queryKey: ["leaderboard", "all", 5],
-    queryFn: () => getLeaderboard({ data: { scope: "all", limit: 5 } }),
+    queryFn: () => fetchLeaderboard({ data: { scope: "all", limit: 5 } }),
   });
   return (
     <div className="rounded-2xl border border-white/10 bg-slate-900/40 p-4 text-left">
