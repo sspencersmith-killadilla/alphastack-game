@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import logoAsset from "@/assets/alphastack-logo.png.asset.json";
+import { TopScoresPanel } from "@/components/game/TopScoresPanel";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -15,7 +16,7 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#0a1024] via-[#0b1330] to-[#0a1024] px-6 text-center text-slate-100">
+    <div className="flex min-h-screen flex-col items-center bg-gradient-to-b from-[#0a1024] via-[#0b1330] to-[#0a1024] px-6 py-12 text-center text-slate-100">
       <img src={logoAsset.url} alt="AlphaStack logo" className="h-32 w-32 rounded-2xl shadow-2xl shadow-black/50" />
       <h1 className="mt-6 text-5xl font-extrabold tracking-tight sm:text-6xl">
         Alpha<span className="text-emerald-400">Stack</span>
@@ -30,11 +31,20 @@ function Home() {
         >
           Play
         </Link>
+        <Link
+          to="/leaderboard"
+          className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-6 py-3 text-lg font-bold text-amber-300 transition-colors hover:bg-amber-500/20"
+        >
+          Leaderboard
+        </Link>
       </div>
       <div className="mt-10 grid max-w-2xl grid-cols-1 gap-3 text-sm text-slate-400 sm:grid-cols-3">
         <Tip emoji="🟩" text="Guess the word with Wordle-style hints." />
         <Tip emoji="🧩" text="Solve it, then steer the piece into place." />
         <Tip emoji="🏆" text="Only solved tiles score when rows clear." />
+      </div>
+      <div className="mt-10 w-full max-w-sm">
+        <TopScoresPanel />
       </div>
     </div>
   );

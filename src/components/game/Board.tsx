@@ -1,16 +1,31 @@
-import { COLS, ROWS, pieceTiles } from "@/game/engine";
+import { COLS, ROWS, hardDrop as engineHardDrop, pieceTiles } from "@/game/engine";
 import { useGame } from "@/game/store";
+import { useSettings } from "@/lib/settings";
 
 export function Board() {
   const board = useGame((s) => s.board);
   const active = useGame((s) => s.active);
   const phase = useGame((s) => s.phase);
+  const ghostOn = useSettings((s) => s.ghostPiece);
 
   const overlay = active && phase !== "gameover" ? pieceTiles(active) : [];
   const overlayMap = new Map<string, { letter: string; color: string }>();
   for (const t of overlay) {
     if (t.y < 0 || t.y >= ROWS) continue;
     overlayMap.set(`${t.x},${t.y}`, { letter: t.letter.toUpperCase(), color: t.color });
+  }
+
+  // Ghost preview: only when the player can place (solved + placing) and the
+  // setting is on. Computed from the active piece's drop target.
+  const ghostMap = new Map<string, { color: string }>();
+  if (ghostOn && active && active.solved && phase === "placing") {
+    const dropped = engineHardDrop(board, active);
+    for (const t of pieceTiles(dropped)) {
+      if (t.y < 0 || t.y >= ROWS) continue;
+      const key = `${t.x},${t.y}`;
+      if (overlayMap.has(key)) continue;
+      ghostMap.set(key, { color: t.color });
+    }
   }
 
   return (
@@ -35,6 +50,19 @@ export function Board() {
                 color={ov.color}
                 letter={showSolved ? ov.letter : null}
                 ghost={!active?.solved}
+              />
+            );
+          }
+          const gh = ghostMap.get(`${x},${y}`);
+          if (gh) {
+            return (
+              <div
+                key={`${x}-${y}`}
+                className="rounded-[3px]"
+                style={{
+                  background: "transparent",
+                  boxShadow: `inset 0 0 0 2px ${gh.color}66`,
+                }}
               />
             );
           }

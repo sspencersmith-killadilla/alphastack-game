@@ -15,8 +15,10 @@ import {
 } from "./engine";
 import { randomShape, type Shape } from "./shapes";
 import { isRealWord, randomAnswer, randomLength } from "./words";
+import { sfx, unlockAudio } from "@/lib/audio";
+import { newClientToken, track } from "@/lib/analytics-client";
 
-export type Phase = "menu" | "guessing" | "placing" | "locking" | "gameover";
+export type Phase = "menu" | "guessing" | "placing" | "locking" | "paused" | "gameover";
 
 export type GuessRow = { letters: string; feedback: LetterFeedback[] };
 
@@ -24,6 +26,7 @@ type NextPreview = { shape: Shape; word: string; length: 4 | 5 | 6 };
 
 type State = {
   phase: Phase;
+  prevPhase: Phase | null;
   board: Board;
   active: Piece | null;
   next: NextPreview | null;
@@ -38,6 +41,14 @@ type State = {
   wordsSolved: number;
   invalidShake: number; // increments to trigger animation
   lastReveal: string | null;
+  lastClearRows: number; // for screen-shake on big clears
+  lastClearTick: number; // increments on each clear
+  lastSolvedWord: string | null; // for toast
+  lastSolvedTick: number;
+  isNewBest: boolean;
+  // run metadata
+  clientToken: string;
+  startedAt: number; // ms timestamp
 };
 
 type Actions = {
@@ -51,13 +62,17 @@ type Actions = {
   hardDrop: () => void;
   tick: () => void; // optional passive timer drop at high levels
   dismissGameOver: () => void;
+  pause: () => void;
+  resume: () => void;
 };
 
-const BEST_KEY = "alphastack.best";
+const BEST_KEY = "alphastack:best";
 
 function loadBest(): number {
   if (typeof window === "undefined") return 0;
-  const v = window.localStorage.getItem(BEST_KEY);
+  const v =
+    window.localStorage.getItem(BEST_KEY) ??
+    window.localStorage.getItem("alphastack.best"); // legacy key
   return v ? Number(v) || 0 : 0;
 }
 function saveBest(v: number) {
@@ -93,6 +108,7 @@ function mergeKeyboard(
 
 export const useGame = create<State & Actions>((set, get) => ({
   phase: "menu",
+  prevPhase: null,
   board: emptyBoard(),
   active: null,
   next: null,
@@ -107,13 +123,24 @@ export const useGame = create<State & Actions>((set, get) => ({
   wordsSolved: 0,
   invalidShake: 0,
   lastReveal: null,
+  lastClearRows: 0,
+  lastClearTick: 0,
+  lastSolvedWord: null,
+  lastSolvedTick: 0,
+  isNewBest: false,
+  clientToken: "",
+  startedAt: 0,
 
   startGame: () => {
     const first = makeNext();
     const second = makeNext();
     const piece = spawnPiece(first.shape, first.word);
+    unlockAudio();
+    const token = newClientToken();
+    track("game_start");
     set({
       phase: "guessing",
+      prevPhase: null,
       board: emptyBoard(),
       active: piece,
       next: second,
@@ -126,6 +153,11 @@ export const useGame = create<State & Actions>((set, get) => ({
       lives: 3,
       wordsSolved: 0,
       lastReveal: null,
+      lastClearRows: 0,
+      lastSolvedWord: null,
+      isNewBest: false,
+      clientToken: token,
+      startedAt: Date.now(),
     });
   },
 
@@ -134,6 +166,7 @@ export const useGame = create<State & Actions>((set, get) => ({
     if (phase !== "guessing" || !active) return;
     if (currentGuess.length >= active.word.length) return;
     if (!/^[a-zA-Z]$/.test(l)) return;
+    sfx.type();
     set({ currentGuess: currentGuess + l.toLowerCase() });
   },
 
@@ -147,10 +180,12 @@ export const useGame = create<State & Actions>((set, get) => ({
     const { phase, active, currentGuess, guesses, keyboard, board, invalidShake } = get();
     if (phase !== "guessing" || !active) return;
     if (currentGuess.length !== active.word.length) {
+      sfx.invalid();
       set({ invalidShake: invalidShake + 1 });
       return;
     }
     if (!isRealWord(currentGuess)) {
+      sfx.invalid();
       set({ invalidShake: invalidShake + 1 });
       return;
     }
@@ -159,6 +194,8 @@ export const useGame = create<State & Actions>((set, get) => ({
     const newKb = mergeKeyboard(keyboard, currentGuess, fb);
     const allCorrect = fb.every((f) => f === "correct");
     if (allCorrect) {
+      sfx.wordSolved();
+      track("word_solved", { length: currentGuess.length, guesses: newGuesses.length });
       set({
         guesses: newGuesses,
         keyboard: newKb,
@@ -166,6 +203,8 @@ export const useGame = create<State & Actions>((set, get) => ({
         active: { ...active, solved: true },
         phase: "placing",
         wordsSolved: get().wordsSolved + 1,
+        lastSolvedWord: currentGuess.toUpperCase(),
+        lastSolvedTick: get().lastSolvedTick + 1,
       });
       return;
     }
@@ -226,6 +265,17 @@ export const useGame = create<State & Actions>((set, get) => ({
   },
 
   dismissGameOver: () => set({ phase: "menu" }),
+
+  pause: () => {
+    const { phase } = get();
+    if (phase !== "guessing" && phase !== "placing") return;
+    set({ prevPhase: phase, phase: "paused" });
+  },
+  resume: () => {
+    const { phase, prevPhase } = get();
+    if (phase !== "paused") return;
+    set({ phase: prevPhase ?? "guessing", prevPhase: null });
+  },
 }));
 
 function lockAndAdvance(
@@ -238,7 +288,9 @@ function lockAndAdvance(
   const lockedPiece = { ...piece, solved };
   const reveal = solved ? null : piece.word.toUpperCase();
   const newBoard = lockPiece(s.board, lockedPiece);
+  sfx.lock();
   const { board: cleared, cleared: rowsCleared, solvedTilesCleared } = clearRows(newBoard);
+  if (rowsCleared > 0) sfx.lineClear(rowsCleared);
 
   const tilePoints = solvedTilesCleared * 10 * s.level;
   const rowBonus = rowsCleared > 0 ? solvedTilesCleared * rowsCleared * 5 : 0;
@@ -246,6 +298,7 @@ function lockAndAdvance(
   const newLines = s.lines + rowsCleared;
   const newLevel = 1 + Math.floor(newLines / 10);
   const newLives = solved ? s.lives : s.lives - 1;
+  if (newLevel > s.level) sfx.levelUp();
 
   // spawn next
   const nextPreview = s.next!;
@@ -259,8 +312,18 @@ function lockAndAdvance(
   const stackTopped = collides(cleared, newPiece, 0, 0);
   const dead = newLives <= 0 || stackTopped;
 
-  if (newScore > s.best) {
-    saveBest(newScore);
+  const isNewBest = newScore > s.best && newScore > 0;
+  if (isNewBest) saveBest(newScore);
+
+  if (dead) {
+    sfx.gameOver();
+    track("game_over", {
+      score: newScore,
+      lines: newLines,
+      level: newLevel,
+      wordsSolved: s.wordsSolved,
+      duration: Math.round((Date.now() - s.startedAt) / 1000),
+    });
   }
 
   set({
@@ -271,6 +334,9 @@ function lockAndAdvance(
     level: newLevel,
     lives: newLives,
     lastReveal: reveal,
+    lastClearRows: rowsCleared,
+    lastClearTick: rowsCleared > 0 ? s.lastClearTick + 1 : s.lastClearTick,
+    isNewBest,
     guesses: [],
     currentGuess: "",
     active: dead ? null : newPiece,

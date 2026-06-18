@@ -1,70 +1,86 @@
-# AlphaStack — Plan
+## Goal
+Take AlphaStack from prototype to production-ready: online arcade-style leaderboard, server-validated scores, local persistence, analytics, audio, and polish.
 
-A single-page game crossing Wordle (guess a hidden word) with Tetris (place the resulting shape on a 10×20 board).
+## 1. Enable Lovable Cloud
+Provisions database, server functions, and secrets. No user accounts — leaderboard entries are anonymous (3-letter initials, arcade-style).
 
-## Gameplay loop
+## 2. Leaderboard (anonymous, arcade-style)
 
-1. Round starts: game picks a hidden word (4–6 letters) and assigns it a classic Tetris-style shape sized to the letter count (I/O/T/L/J/S/Z for 4; pentomino-style for 5; hexomino-style for 6). Each cell of the shape maps to one letter of the word in reading order.
-2. Piece spawns at the top of the 10×20 playfield. Player **cannot** move/rotate it yet.
-3. Player gets up to **6 Wordle-style guesses** in a side panel (only real dictionary words of the matching length accepted; invalid words are rejected with a shake, not counted).
-4. Each **wrong** guess drops the piece down one row (Wordle colour feedback: green/yellow/grey on the guess grid + keyboard).
-5. **Correct guess** → piece is "solved": it stops auto-falling, tiles display the letters, player can move ←/→, rotate, soft-drop ↓, hard-drop Space to place it anywhere reachable.
-6. **6 wrong guesses** → piece becomes "unsolved": hard-drops straight down as plain coloured blocks (no letters).
-7. Piece locks. Full rows clear. **Points only count for cleared tiles that came from solved words.** Unsolved tiles still clear but score 0.
-8. Next word + piece spawns. Repeat.
+**Database**
+- `scores` table: `id, initials (char 3), score, lines, level, words_solved, duration_seconds, game_seed, client_token, created_at`
+- Public `SELECT` policy (top 100 all-time + top 50 daily)
+- No public `INSERT` — writes go through a server function only
 
-## Scoring & progression
+**Server functions**
+- `submitScore({ initials, score, lines, level, words_solved, duration_seconds, seed, runHash })`
+  - Zod validation: initials `^[A-Z]{3}$`, numeric bounds, max duration, etc.
+  - Anti-cheat checks (see §3)
+  - Insert via service role
+- `getLeaderboard({ scope: 'all' | 'daily' })` — public read via publishable client
 
-- Points per cleared *solved* tile: 10 × level multiplier.
-- Row-clear bonus: solved-tile-count × (rows cleared) × 5.
-- Level up every 10 line clears; speed only matters for the pre-solve auto-drop cadence (faster forced drops give less time to guess at higher levels — visual "tick" between guesses tightens, but the drop is still tied to wrong guesses; level adds a passive timer drop on top at higher levels).
-- **Lives:** start with 3. Lose 1 life if a piece is placed unsolved. Game over when stack reaches top OR lives hit 0.
+**UI**
+- Game Over modal: if score qualifies (top 100 or top 50 daily), show 3-letter initials entry (auto-uppercase, arcade font, A/B/C arrow-cycle optional — keep it simple with text input + uppercase mask)
+- New `/leaderboard` route with All-Time / Today tabs
+- Compact "Top 5" panel on home page and sidebar during play
+- Highlight the just-submitted row
 
-## Screens
+## 3. Anti-cheat basics
+Server-side `submitScore` rejects when:
+- Initials don't match `^[A-Z]{3}$`
+- `score`, `lines`, `level`, `words_solved` outside plausible bounds
+- `score` inconsistent with `lines + words_solved` (recompute server-side using known scoring formula; reject if client score > computed + small tolerance)
+- `duration_seconds` too short for the claimed lines (min seconds-per-line floor)
+- `level` inconsistent with `lines` (level = floor(lines/10) + 1)
+- Duplicate `client_token` (idempotency — one submit per game)
+- Soft rate-limit: max N submits per IP per minute (best-effort; documented as not a hard limit)
+- Profanity filter on initials (small blocklist: FUK, SHT, NIG, FAG, CUM, ASS, TIT, etc.)
 
-- **Title screen:** AlphaStack logo, Play, How to Play, Best score.
-- **Game screen:** layout matches the reference image — left rail (Score / Best / Lines / Level / Next), centre 10×20 board, right rail (current guess row, guess history, on-screen QWERTY with colour state, movement controls, How to Play card).
-- **Game Over modal:** final score, lines, words solved, Play Again.
+Client sends a per-game `client_token` (uuid generated at game start) and `game_seed` for traceability. No client-side "trust me" fields are accepted.
 
-## Technical details
+## 4. Persistence (localStorage)
+- `alphastack:best` — best score, lines, words (already partly there; harden)
+- `alphastack:settings` — sfx volume, music on/off, ghost piece, reduced motion
+- `alphastack:resume` — in-progress board, queue, score, lives so a refresh doesn't wipe a run (prompt "Resume game?" on load)
+- `alphastack:lastInitials` — pre-fill the initials box
 
-- **Stack:** TanStack Start (existing), React 19, Tailwind v4, shadcn. No backend needed — pure client game. Best score in `localStorage`.
-- **Routes:**
-  - `src/routes/index.tsx` — title / menu.
-  - `src/routes/play.tsx` — game screen.
-- **State:** single `useGameStore` (Zustand) holding board (number[][] with tile metadata: colour, letter|null, solved bool), activePiece, nextPiece, guesses, currentGuess, keyboardState, score/best/lines/level/lives, phase (`guessing` | `placing` | `locking` | `gameover`).
-- **Word list:** bundle a curated answer list (~500 words per length, 4/5/6) plus a larger allowed-guess list for validation. Stored as three `.ts` files under `src/game/words/`.
-- **Shapes:** `src/game/shapes.ts` exports tetromino set (4), pentomino set (5), hexomino subset (6) as coordinate arrays with rotation states. Letters are mapped to cells in a stable reading order so rotations keep letter identity.
-- **Engine:** `src/game/engine.ts` — pure functions for `rotate`, `move`, `collide`, `lockPiece`, `clearRows` (returns cleared row indices + solved-tile counts for scoring).
-- **Input:** keyboard listeners on the play route — letters/Enter/Backspace for guessing; ←/→/↑(rotate)/↓(soft)/Space(hard) only enabled when `phase === 'placing'`. On-screen buttons mirror this.
-- **Styling:** dark navy background (#0b1220-ish), neon accent palette pulled from the logo (red/blue/green/yellow/purple/orange) used per-piece. Title uses a chunky display font (e.g. Space Grotesk) for the AlphaStack wordmark; UI body in Inter. Tile cells use rounded squares with subtle inner shadow.
-- **Animations:** piece drop = CSS transform tween; row-clear = flash + collapse; invalid-word = shake on the guess row.
+## 5. Analytics
+Lightweight event log via a server function → `analytics_events` table (`event, props jsonb, session_id, created_at`). Events:
+- `game_start`, `game_over` (with score/lines/words/duration)
+- `word_solved` (length, time-to-solve)
+- `score_submitted` (rank achieved)
+- `leaderboard_viewed`
 
-## Files to create
+No PII. Session id is a random uuid in localStorage.
 
-```text
-src/game/words/four.ts
-src/game/words/five.ts
-src/game/words/six.ts
-src/game/words/dictionary.ts        // combined allowed-guess set
-src/game/shapes.ts
-src/game/engine.ts
-src/game/store.ts                   // zustand
-src/components/game/Board.tsx
-src/components/game/GuessPanel.tsx
-src/components/game/Keyboard.tsx
-src/components/game/Sidebar.tsx     // Score/Best/Lines/Level/Lives/Next
-src/components/game/Controls.tsx    // movement buttons
-src/components/game/HowToPlay.tsx
-src/components/game/GameOverModal.tsx
-src/routes/play.tsx
-src/assets/logo.png.asset.json      // uploaded logo via lovable-assets
-```
+## 6. Audio
+Web Audio API with tiny synthesized SFX (no asset downloads, keeps bundle small):
+- piece lock, line clear (1/2/3/4-line variants), word solved, level up, game over, menu click
+- Optional subtle background loop (off by default)
+- Mute toggle + volume slider in settings, persisted
 
-Update `src/routes/index.tsx` into the title screen and replace placeholder.
+## 7. Polish
+- Pause menu (P key) with Resume / Restart / Settings / Quit
+- Settings panel: SFX volume, music toggle, ghost piece toggle, reduced motion, key remap (left/right/rotate/soft-drop/hard-drop/hold)
+- Toast on word solved with the word + points
+- Subtle screen shake on Tetris (4-line clear) — respects reduced motion
+- New best score celebration animation
+- Favicon, OG image, meta description, twitter card on `/`, `/play`, `/leaderboard`
+- Mobile touch controls deferred (call out as next step)
 
-## Out of scope (v1)
+## 8. Smoke test update
+Extend `scripts/smoke_test.py` to:
+- Visit `/leaderboard` and check it renders
+- Trigger a game-over flow and verify initials prompt appears for qualifying scores (mock by inserting a low high-water mark in test DB) — optional
 
-- Online leaderboards, accounts, sound effects (can add later).
-- Daily-puzzle mode.
-- Mobile touch gestures beyond the on-screen buttons (buttons work; swipe later).
+## Technical notes
+- All score writes go through `createServerFn` with Zod + service-role insert (loaded inside the handler).
+- Reads use the server publishable client with a narrow `TO anon` SELECT policy.
+- Migrations include `GRANT SELECT ON public.scores TO anon, authenticated` and `GRANT ALL ON public.scores TO service_role`.
+- RLS enabled; only SELECT policy for anon; no INSERT/UPDATE/DELETE policies (service role bypasses).
+- Audio is synthesized (OscillatorNode) — zero asset cost, lazy-initialized on first user gesture to satisfy autoplay rules.
+
+## Out of scope (flagged for later)
+- Sign-in / per-user accounts
+- Mobile touch controls
+- Hard backend rate limiting (no standard primitive yet — soft limit only)
+- Replay verification (would require recording inputs)
