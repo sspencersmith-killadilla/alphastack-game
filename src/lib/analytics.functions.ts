@@ -11,7 +11,7 @@ export const logEvent = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => eventInput.parse(data))
   .handler(async ({ data }) => {
     try {
-      const { getSupabaseAdmin } = await import("@/lib/supabase-clients.server");
+      const { getSupabaseAdmin } = await import("@/lib/supabase-clients");
       const supabaseAdmin = getSupabaseAdmin();
       await supabaseAdmin.from("analytics_events").insert({
         event: data.event,
