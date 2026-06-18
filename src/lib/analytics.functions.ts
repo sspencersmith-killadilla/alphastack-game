@@ -10,7 +10,7 @@ const eventInput = z.object({
 });
 
 export const logEvent = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => eventInput.parse(data))
+  .validator((data: unknown) => eventInput.parse(data))
   .handler(async ({ data }) => {
     try {
       const supabaseAdmin = createClient<Database>(
