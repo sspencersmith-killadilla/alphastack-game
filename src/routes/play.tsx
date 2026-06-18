@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Pause, Settings as SettingsIcon } from "lucide-react";
 import { Board } from "@/components/game/Board";
 import { Controls } from "@/components/game/Controls";
 import { GameOverModal } from "@/components/game/GameOverModal";
@@ -7,8 +8,13 @@ import { GuessPanel } from "@/components/game/GuessPanel";
 import { HowToPlay } from "@/components/game/HowToPlay";
 import { Keyboard } from "@/components/game/Keyboard";
 import { Sidebar } from "@/components/game/Sidebar";
+import { PauseModal } from "@/components/game/PauseModal";
+import { SettingsModal } from "@/components/game/SettingsModal";
+import { WordToast } from "@/components/game/WordToast";
 import logoAsset from "@/assets/alphastack-logo.png.asset.json";
 import { useGame } from "@/game/store";
+import { useSettings } from "@/lib/settings";
+import { unlockAudio } from "@/lib/audio";
 
 export const Route = createFileRoute("/play")({
   head: () => ({
@@ -33,6 +39,21 @@ function PlayPage() {
   const soft = useGame((s) => s.softDrop);
   const hard = useGame((s) => s.hardDrop);
   const tick = useGame((s) => s.tick);
+  const pause = useGame((s) => s.pause);
+  const resume = useGame((s) => s.resume);
+  const lastClearRows = useGame((s) => s.lastClearRows);
+  const lastClearTick = useGame((s) => s.lastClearTick);
+
+  const reducedMotion = useSettings((s) => s.reducedMotion);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [shake, setShake] = useState(false);
+
+  useEffect(() => {
+    if (lastClearTick === 0 || lastClearRows < 3 || reducedMotion) return;
+    setShake(true);
+    const t = setTimeout(() => setShake(false), 350);
+    return () => clearTimeout(t);
+  }, [lastClearTick, lastClearRows, reducedMotion]);
 
   useEffect(() => {
     if (phase === "menu") start();
@@ -40,6 +61,17 @@ function PlayPage() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === "p" || e.key === "P") {
+        e.preventDefault();
+        if (phase === "paused") resume();
+        else pause();
+        return;
+      }
+      if (e.key === "Escape" && settingsOpen) {
+        setSettingsOpen(false);
+        return;
+      }
+      if (phase === "paused") return;
       if (phase === "guessing") {
         if (e.key === "Enter") {
           e.preventDefault();
@@ -63,15 +95,27 @@ function PlayPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, submit, back, type, move, rotate, soft, hard]);
+  }, [phase, submit, back, type, move, rotate, soft, hard, pause, resume, settingsOpen]);
 
   useEffect(() => {
+    if (phase === "paused") return;
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
-  }, [tick]);
+  }, [tick, phase]);
+
+  // Unlock audio on first user gesture (pointer or key) anywhere on the page.
+  useEffect(() => {
+    const onGesture = () => unlockAudio();
+    window.addEventListener("pointerdown", onGesture, { once: true });
+    window.addEventListener("keydown", onGesture, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", onGesture);
+      window.removeEventListener("keydown", onGesture);
+    };
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0a1024] via-[#0b1330] to-[#0a1024] text-slate-100">
+    <div className={`min-h-screen bg-gradient-to-b from-[#0a1024] via-[#0b1330] to-[#0a1024] text-slate-100 ${shake ? "animate-[shake_0.35s]" : ""}`}>
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
         <Link to="/" className="flex items-center gap-2">
           <img src={logoAsset.url} alt="AlphaStack" className="h-9 w-9 rounded-md" />
@@ -79,9 +123,17 @@ function PlayPage() {
             Alpha<span className="text-emerald-400">Stack</span>
           </span>
         </Link>
-        <span className="rounded-full bg-violet-500/20 px-3 py-1 text-xs font-bold uppercase tracking-widest text-violet-300">
-          Beta
-        </span>
+        <div className="flex items-center gap-2">
+          <Link to="/leaderboard" className="rounded-md px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-amber-300 hover:bg-slate-800">
+            Leaderboard
+          </Link>
+          <button onClick={pause} className="rounded-md p-2 text-slate-300 hover:bg-slate-800" aria-label="Pause">
+            <Pause className="h-4 w-4" />
+          </button>
+          <button onClick={() => setSettingsOpen(true)} className="rounded-md p-2 text-slate-300 hover:bg-slate-800" aria-label="Settings">
+            <SettingsIcon className="h-4 w-4" />
+          </button>
+        </div>
       </header>
 
       <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 pb-10 md:grid-cols-[140px_minmax(0,1fr)_300px]">
@@ -99,7 +151,19 @@ function PlayPage() {
         </aside>
       </main>
 
+      <WordToast />
+      <PauseModal onOpenSettings={() => setSettingsOpen(true)} />
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <GameOverModal />
+      <style>{`
+        @keyframes shake {
+          0%, 100% { transform: translate(0, 0); }
+          20% { transform: translate(-4px, 2px); }
+          40% { transform: translate(4px, -2px); }
+          60% { transform: translate(-3px, -1px); }
+          80% { transform: translate(3px, 1px); }
+        }
+      `}</style>
     </div>
   );
 }
