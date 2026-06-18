@@ -1,2 +1,2 @@
 export const ALPHASTACK_LOGO_URL =
-  "/__l5e/assets-v1/3ff2d65a-afbb-4f06-b8b9-9e874fcbffb7/alphastack-logo.png";
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' rx='18' fill='%230a1024'/%3E%3Cpath d='M24 68 40 28h16l16 40H59l-3-9H39l-3 9H24Zm19-20h10l-5-15-5 15Z' fill='%2334d399'/%3E%3Cpath d='M19 74h58v8H19zM70 18h10v10H70zM58 18h10v10H58zM70 30h10v10H70z' fill='%23fbbf24'/%3E%3C/svg%3E";
