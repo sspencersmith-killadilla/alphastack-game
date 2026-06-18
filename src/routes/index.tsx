@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { TopScoresPanel } from "@/components/game/TopScoresPanel";
 import { ALPHASTACK_LOGO_URL } from "@/lib/assets";
+import { formatCountdown, getDailySeed, msUntilNextDailyReset } from "@/game/daily";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -24,20 +26,13 @@ function Home() {
       <p className="mt-3 max-w-md text-balance text-slate-400">
         A word puzzle stacked on a falling-block game. Solve the hidden word to take control of the piece, then clear rows.
       </p>
-      <div className="mt-8 flex gap-3">
-        <Link
-          to="/play"
-          className="rounded-lg bg-emerald-500 px-6 py-3 text-lg font-bold text-slate-900 transition-colors hover:bg-emerald-400"
-        >
-          Play
-        </Link>
-        <Link
-          to="/leaderboard"
-          className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-6 py-3 text-lg font-bold text-amber-300 transition-colors hover:bg-amber-500/20"
-        >
-          Leaderboard
-        </Link>
-      </div>
+      <ModeCards />
+      <Link
+        to="/leaderboard"
+        className="mt-4 rounded-lg border border-amber-400/40 bg-amber-500/10 px-5 py-2 text-sm font-bold text-amber-300 transition-colors hover:bg-amber-500/20"
+      >
+        View Leaderboard
+      </Link>
       <div className="mt-10 grid max-w-2xl grid-cols-1 gap-3 text-sm text-slate-400 sm:grid-cols-3">
         <Tip emoji="🟩" text="Guess the word- get the hints." />
         <Tip emoji="🧩" text="Solve it, then steer the piece into place." />
@@ -46,6 +41,53 @@ function Home() {
       <div className="mt-10 w-full max-w-sm">
         <TopScoresPanel />
       </div>
+    </div>
+  );
+}
+
+function ModeCards() {
+  const [ms, setMs] = useState(() => msUntilNextDailyReset());
+  const [playedToday, setPlayedToday] = useState(false);
+  useEffect(() => {
+    setPlayedToday(window.localStorage.getItem(`alphastack:daily:${getDailySeed()}`) === "done");
+    const id = window.setInterval(() => setMs(msUntilNextDailyReset()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  return (
+    <div className="mt-8 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
+      <Link
+        to="/daily"
+        className="group flex flex-col items-start rounded-2xl border border-emerald-400/40 bg-emerald-500/10 p-5 text-left transition-colors hover:bg-emerald-500/20"
+      >
+        <div className="flex w-full items-center justify-between">
+          <span className="text-xs font-bold uppercase tracking-widest text-emerald-300">Daily Puzzle</span>
+          <span className="rounded-md bg-emerald-500/20 px-2 py-0.5 font-mono text-[10px] text-emerald-200">
+            {getDailySeed()}
+          </span>
+        </div>
+        <div className="mt-2 text-2xl font-extrabold text-white">
+          {playedToday ? "See today's leaderboard" : "Play today's puzzle"}
+        </div>
+        <p className="mt-1 text-xs text-slate-300">
+          Same words and shapes for everyone. One attempt per day.
+        </p>
+        <div className="mt-3 text-[10px] uppercase tracking-widest text-emerald-300/80">
+          Next puzzle in {formatCountdown(ms)}
+        </div>
+      </Link>
+      <Link
+        to="/play"
+        className="group flex flex-col items-start rounded-2xl border border-white/10 bg-slate-900/60 p-5 text-left transition-colors hover:bg-slate-900"
+      >
+        <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Free Play</span>
+        <div className="mt-2 text-2xl font-extrabold text-white">Endless mode</div>
+        <p className="mt-1 text-xs text-slate-400">
+          Random words, random shapes, unlimited runs. Chase the all-time leaderboard.
+        </p>
+        <div className="mt-3 text-[10px] uppercase tracking-widest text-slate-500">
+          Play as much as you want
+        </div>
+      </Link>
     </div>
   );
 }

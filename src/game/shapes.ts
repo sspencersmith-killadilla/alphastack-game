@@ -48,9 +48,9 @@ const HEXOMINOES: Shape[] = [
   { id: "H-step", color: COLORS.purple, cells: [{x:0,y:0},{x:1,y:0},{x:1,y:1},{x:2,y:1},{x:2,y:2},{x:3,y:2}] },
 ];
 
-export function randomShape(length: 4 | 5 | 6): Shape {
+export function randomShape(length: 4 | 5 | 6, rng: () => number = Math.random): Shape {
   const pool = length === 4 ? TETROMINOES : length === 5 ? PENTOMINOES : HEXOMINOES;
-  const s = pool[Math.floor(Math.random() * pool.length)];
+  const s = pool[Math.floor(rng() * pool.length)];
   return { ...s, cells: s.cells.map((c) => ({ ...c })) };
 }
 

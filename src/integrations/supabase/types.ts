@@ -38,6 +38,45 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_scores: {
+        Row: {
+          client_token: string
+          created_at: string
+          duration_seconds: number
+          id: string
+          initials: string
+          level: number
+          lines: number
+          puzzle_date: string
+          score: number
+          words_solved: number
+        }
+        Insert: {
+          client_token: string
+          created_at?: string
+          duration_seconds: number
+          id?: string
+          initials: string
+          level: number
+          lines: number
+          puzzle_date: string
+          score: number
+          words_solved: number
+        }
+        Update: {
+          client_token?: string
+          created_at?: string
+          duration_seconds?: number
+          id?: string
+          initials?: string
+          level?: number
+          lines?: number
+          puzzle_date?: string
+          score?: number
+          words_solved?: number
+        }
+        Relationships: []
+      }
       scores: {
         Row: {
           client_token: string

@@ -4,6 +4,7 @@ export function PauseModal({ onOpenSettings }: { onOpenSettings: () => void }) {
   const phase = useGame((s) => s.phase);
   const resume = useGame((s) => s.resume);
   const restart = useGame((s) => s.startGame);
+  const mode = useGame((s) => s.mode);
   if (phase !== "paused") return null;
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
@@ -16,7 +17,7 @@ export function PauseModal({ onOpenSettings }: { onOpenSettings: () => void }) {
           <button onClick={onOpenSettings} className="rounded-lg border border-white/10 bg-slate-800 px-4 py-2 font-bold text-white hover:bg-slate-700">
             Settings
           </button>
-          <button onClick={restart} className="rounded-lg border border-white/10 bg-slate-800 px-4 py-2 font-bold text-white hover:bg-slate-700">
+          <button onClick={() => restart({ mode })} className="rounded-lg border border-white/10 bg-slate-800 px-4 py-2 font-bold text-white hover:bg-slate-700">
             Restart
           </button>
         </div>
