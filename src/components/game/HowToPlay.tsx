@@ -7,7 +7,8 @@ export function HowToPlay() {
         <li>↓ Wrong guess = piece falls 1 row</li>
         <li>✓ Correct = unlock movement</li>
         <li>← → rotate &amp; place piece</li>
-        <li>Space = hard drop</li>
+        <li>Shift / Enter = hard drop</li>
+        <li>Space = pause</li>
         <li>🏆 Clear rows for points!</li>
         <li className="text-slate-500">Only solved-word tiles score.</li>
       </ul>

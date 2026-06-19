@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { COLS, ROWS, hardDrop as engineHardDrop, pieceTiles } from "@/game/engine";
 import { useGame } from "@/game/store";
 import { useSettings } from "@/lib/settings";
@@ -7,6 +8,52 @@ export function Board() {
   const active = useGame((s) => s.active);
   const phase = useGame((s) => s.phase);
   const ghostOn = useSettings((s) => s.ghostPiece);
+  const move = useGame((s) => s.move);
+  const rotate = useGame((s) => s.rotate);
+  const softDrop = useGame((s) => s.softDrop);
+  const hardDrop = useGame((s) => s.hardDrop);
+
+  const touchRef = useRef<{ x: number; y: number; t: number; lastStepX: number; moved: boolean } | null>(null);
+  const STEP = 26; // px per horizontal step
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    if (phase !== "placing") return;
+    const t = e.touches[0];
+    touchRef.current = { x: t.clientX, y: t.clientY, t: Date.now(), lastStepX: t.clientX, moved: false };
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    const r = touchRef.current;
+    if (!r || phase !== "placing") return;
+    const t = e.touches[0];
+    const dx = t.clientX - r.lastStepX;
+    if (Math.abs(dx) >= STEP) {
+      const steps = Math.trunc(dx / STEP);
+      for (let i = 0; i < Math.abs(steps); i++) move(steps > 0 ? 1 : -1);
+      r.lastStepX += steps * STEP;
+      r.moved = true;
+    }
+    const dy = t.clientY - r.y;
+    if (Math.abs(dy) > 12) r.moved = true;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const r = touchRef.current;
+    touchRef.current = null;
+    if (!r || phase !== "placing") return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - r.x;
+    const dy = t.clientY - r.y;
+    const dt = Date.now() - r.t;
+    // Swipe down → hard drop (fast/long) or soft drop (gentle)
+    if (dy > 60 && Math.abs(dy) > Math.abs(dx) * 1.2) {
+      if (dy > 120 || dt < 250) hardDrop();
+      else softDrop();
+      return;
+    }
+    // Tap (no significant movement) → rotate
+    if (!r.moved && dt < 300 && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+      rotate();
+    }
+  };
 
   const overlay = active && phase !== "gameover" ? pieceTiles(active) : [];
   const overlayMap = new Map<string, { letter: string; color: string }>();
@@ -30,7 +77,10 @@ export function Board() {
 
   return (
     <div
-      className="grid gap-[2px] rounded-lg border border-white/10 bg-slate-950/60 p-2 shadow-2xl shadow-black/40"
+      className="grid gap-[2px] rounded-lg border border-white/10 bg-slate-950/60 p-2 shadow-2xl shadow-black/40 touch-none select-none"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
       style={{
         gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`,
         gridTemplateRows: `repeat(${ROWS}, minmax(0, 1fr))`,

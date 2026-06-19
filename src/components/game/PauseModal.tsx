@@ -21,7 +21,7 @@ export function PauseModal({ onOpenSettings }: { onOpenSettings: () => void }) {
             Restart
           </button>
         </div>
-        <p className="mt-4 text-[10px] uppercase tracking-widest text-slate-500">Press P to resume</p>
+        <p className="mt-4 text-[10px] uppercase tracking-widest text-slate-500">Press Space to resume</p>
       </div>
     </div>
   );

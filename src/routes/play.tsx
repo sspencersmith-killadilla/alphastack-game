@@ -23,6 +23,7 @@ export const Route = createFileRoute("/play")({
       { name: "description", content: "Guess the hidden word, then stack the shape. AlphaStack is Wordle meets Tetris." },
       { property: "og:title", content: "Play AlphaStack" },
       { property: "og:description", content: "Guess the hidden word, then stack the shape." },
+      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" },
     ],
   }),
   component: PlayPage,
@@ -61,7 +62,7 @@ function PlayPage() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "p" || e.key === "P") {
+      if (e.key === " " || e.code === "Space") {
         e.preventDefault();
         if (phase === "paused") resume();
         else pause();
@@ -87,7 +88,7 @@ function PlayPage() {
         else if (e.key === "ArrowRight") move(1);
         else if (e.key === "ArrowUp") rotate();
         else if (e.key === "ArrowDown") soft();
-        else if (e.key === " ") {
+        else if (e.key === "Shift" || e.key === "Enter") {
           e.preventDefault();
           hard();
         }
@@ -116,7 +117,7 @@ function PlayPage() {
 
   return (
     <div className={`min-h-screen bg-gradient-to-b from-[#0a1024] via-[#0b1330] to-[#0a1024] text-slate-100 ${shake ? "animate-[shake_0.35s]" : ""}`}>
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-3 py-3 md:px-4 md:py-4">
         <Link to="/" className="flex items-center gap-2">
           <img src={ALPHASTACK_LOGO_URL} alt="AlphaStack" className="h-9 w-9 rounded-md" />
           <span className="text-xl font-extrabold tracking-tight">
@@ -127,21 +128,37 @@ function PlayPage() {
           <Link to="/leaderboard" className="rounded-md px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-amber-300 hover:bg-slate-800">
             Leaderboard
           </Link>
-          <button onClick={pause} className="rounded-md p-2 text-slate-300 hover:bg-slate-800" aria-label="Pause">
-            <Pause className="h-4 w-4" />
+          <button onClick={pause} className="flex h-10 w-10 items-center justify-center rounded-md text-slate-300 hover:bg-slate-800 md:h-9 md:w-9" aria-label="Pause">
+            <Pause className="h-5 w-5 md:h-4 md:w-4" />
           </button>
-          <button onClick={() => setSettingsOpen(true)} className="rounded-md p-2 text-slate-300 hover:bg-slate-800" aria-label="Settings">
-            <SettingsIcon className="h-4 w-4" />
+          <button onClick={() => setSettingsOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-md text-slate-300 hover:bg-slate-800 md:h-9 md:w-9" aria-label="Settings">
+            <SettingsIcon className="h-5 w-5 md:h-4 md:w-4" />
           </button>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-3 pb-10 md:px-4">
+      <main className="mx-auto max-w-6xl px-3 pb-[max(2.5rem,env(safe-area-inset-bottom))] md:px-4">
         <div className="mb-3 md:hidden">
           <CompactStats />
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-[140px_minmax(0,1fr)_300px] md:gap-6">
-          <aside className="hidden md:block">
+        {/* Mobile: phase-aware action zone right under board for thumb reach */}
+        <div className="md:hidden space-y-3">
+          <div className="flex justify-center">
+            <Board />
+          </div>
+          {phase === "guessing" || phase === "paused" ? (
+            <>
+              <GuessPanel />
+              <Keyboard />
+            </>
+          ) : (
+            <Controls />
+          )}
+          <HowToPlay />
+        </div>
+        {/* Desktop layout unchanged */}
+        <div className="hidden md:grid grid-cols-1 gap-4 md:grid-cols-[140px_minmax(0,1fr)_300px] md:gap-6">
+          <aside className="block">
             <Sidebar />
           </aside>
           <section className="flex justify-center">
