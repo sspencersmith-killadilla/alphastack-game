@@ -1,50 +1,26 @@
-# Spacebar pause + mobile experience improvements
+## Goal
+Restrict both guess validation and puzzle answers to a Scrabble tournament dictionary.
 
-## 1. Spacebar = Pause (swap with P)
+## Background
+Today `src/game/wordlist.txt` is an ENABLE-derived list (bundled via `?raw` in `src/game/words.ts`). ENABLE overlaps with Scrabble dictionaries but is not identical and includes words not valid in tournament play. Both `isRealWord` (guess check) and `randomAnswer` (puzzle pick) read from this same file.
 
-In `src/routes/play.tsx` key handler:
-- Make `" "` (Space) toggle pause/resume (preventDefault so the page doesn't scroll).
-- Remove `P` as the pause key.
-- Move hard drop off Space → use `Shift` (or `Enter` during placing) so placing still has a fast-drop key.
-- Update `PauseModal` hint text from "Press P to resume" to "Press Space to resume".
-- Update `HowToPlay` hint text if it mentions P/Space.
+## Question for you
+Which Scrabble dictionary do you want?
 
-## 2. Mobile experience improvements
+1. **TWL06** (Tournament Word List) — used in North America (USA/Canada/Thailand). ~178k words.
+2. **SOWPODS / Collins Scrabble Words** — used everywhere else; superset of TWL. ~280k words.
+3. **Intersection of both** — safest "universally valid" Scrabble words.
 
-The current mobile layout stacks Board → GuessPanel → Keyboard → Controls in one tall column. On a phone you have to scroll to type and again to place the piece. Proposed changes (mobile-only, desktop layout unchanged):
+Default recommendation: **TWL06**, since it's the stricter, more recognizable North American list and avoids obscure Collins-only entries (e.g. `QI`, `ZA` exist in both but Collins adds many rare forms).
 
-a. **Reorder for thumb reach.** On mobile, render: CompactStats → Board → (context-aware action zone) → HowToPlay. The action zone shows the on-screen Keyboard during the `guessing` phase and the Controls D-pad during the `placing` phase, so the relevant input is always directly under the board with no scrolling.
+## Plan (once you pick a list)
 
-b. **Bigger, touch-friendly Controls.** Increase D-pad buttons from `h-9 w-9` to `h-14 w-14` on mobile, widen tap targets, and lay them out as a proper left/rotate/right row plus soft/hard drop row sized for thumbs. Desktop keeps the compact size.
+1. Replace `src/game/wordlist.txt` with the chosen Scrabble dictionary, filtered to 4/5/6-letter alphabetic entries (uppercase or lowercase; normalized to lowercase at load).
+2. No code changes needed in `src/game/words.ts` — it already partitions by length and exposes `WORDS_4/5/6`, `isRealWord`, `randomAnswer`, `randomLength`, `rampLength`. Verify after swap that each bucket is non-empty.
+3. Add a short header comment in `wordlist.txt` (or a sibling `LICENSE` note) attributing the source, since Scrabble dictionaries have licensing considerations (TWL/Collins are trademarked; the underlying word lists are facts but distribution etiquette varies).
+4. Sanity check: load the new file in a quick script, assert counts for each length, spot-check a few known Scrabble-valid (`QI`, `ZA` are 2-letter so n/a here; check `AALII`, `QADI`, `ZAYIN`) and known invalid (`ZONKS` is valid; verify `OUIJA` excluded from TWL but allowed in Collins, etc.).
+5. Rebuild — existing daily-difficulty ramp, scoring, and guess flow keep working unchanged because the API surface of `words.ts` is identical.
 
-c. **Swipe gestures on the Board (placing phase only).** Add touch handlers:
-   - swipe left/right → move piece
-   - tap → rotate
-   - swipe down → soft drop
-   - swipe down hard / long swipe → hard drop
-   This lets players place pieces without looking away from the board.
-
-d. **Sticky header + safe-area padding.** Add `pb-[env(safe-area-inset-bottom)]` to the main container and keep the header compact on small screens so iOS notch / home indicator don't cover controls.
-
-e. **Prevent pinch-zoom / double-tap zoom during play.** Add `touch-action: manipulation` to the board and control buttons, and ensure the root meta viewport has `maximum-scale=1, user-scalable=no` while on `/play` (via the route head).
-
-f. **Mobile pause button.** The current header pause icon is tiny. Enlarge tap target to 40×40 on mobile and add an `aria-label`.
-
-g. **Keyboard sizing.** The on-screen `Keyboard` keys are `h-9 min-w-[26px]`. Bump to `h-11 min-w-[30px]` on mobile widths for accurate tapping; keep current size on `sm:` and up.
-
-## Technical details
-
-Files to change:
-- `src/routes/play.tsx` — key handler (Space = pause, Shift = hard drop), mobile layout reorder driven by `phase`, viewport meta in route head, safe-area padding.
-- `src/components/game/PauseModal.tsx` — hint text.
-- `src/components/game/HowToPlay.tsx` — update key hints.
-- `src/components/game/Controls.tsx` — larger touch targets on mobile (`h-14 w-14 sm:h-9 sm:w-9`), `touch-action: manipulation`.
-- `src/components/game/Keyboard.tsx` — larger keys on mobile.
-- `src/components/game/Board.tsx` — touch/swipe handlers wired to `move`, `rotate`, `softDrop`, `hardDrop` (only when `phase === "placing"`).
-
-No game-logic or scoring changes. No backend changes.
-
-## Open questions
-
-- For hard drop on desktop after Space is reassigned: use **Shift** or **Enter**? I'll default to **Shift** unless you'd prefer Enter.
-- Swipe gestures on the board: OK to add, or do you want to keep the on-screen D-pad as the only placing input on mobile?
+## Notes
+- Daily puzzle determinism is preserved: the seeded RNG indexes into the new list the same way, but **past daily seeds will produce different words** than before the swap (unavoidable when the list changes). New best/leaderboard scores from today forward use the new list.
+- File size: TWL ~1.9MB raw, ~700KB after filtering to 4–6 letters; bundled as a string via Vite `?raw` — fine for a game payload.
