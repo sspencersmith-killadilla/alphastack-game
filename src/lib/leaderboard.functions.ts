@@ -3,8 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
-// Server-side scoring formula MUST match client engine (engine.ts lockAndAdvance).
-// tilePoints = solvedTilesCleared * 10 * levelAtClear
+// Server-side scoring formula MUST match client engine (store.ts lockAndAdvance).
+// tilePoints = solvedLetterPoints * 5 * levelAtClear  (Scrabble letter values; max 10/letter → 50/tile)
 // rowBonus   = (rowsCleared > 0) ? solvedTilesCleared * rowsCleared * 5 : 0
 // We can't reconstruct exact per-event level history server-side, but we can
 // bound the *maximum* plausible score given final lines, level and words_solved.
@@ -56,7 +56,8 @@ export const submitScore = createServerFn({ method: "POST" })
     // Score upper bound: assume every solved-word tile was cleared at final level,
     // and the largest possible row bonus (10 tiles * 4 rows). Generous on purpose.
     const maxTiles = wordsSolved * 6; // max piece length is 6
-    const maxTilePoints = maxTiles * 10 * level;
+    // Per-tile cap is 50 (Scrabble letter value 10 × multiplier 5).
+    const maxTilePoints = maxTiles * 50 * level;
     const maxRowBonus = maxTiles * 4 * 5;
     const maxScore = maxTilePoints + maxRowBonus;
     if (score > maxScore) return { ok: false, reason: "Score exceeds maximum." };

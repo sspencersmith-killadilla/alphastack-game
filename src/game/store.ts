@@ -326,7 +326,12 @@ function lockAndAdvance(
   const reveal = solved ? null : piece.word.toUpperCase();
   const newBoard = lockPiece(s.board, lockedPiece);
   sfx.lock();
-  const { board: cleared, cleared: rowsCleared, solvedTilesCleared } = clearRows(newBoard);
+  const {
+    board: cleared,
+    cleared: rowsCleared,
+    solvedTilesCleared,
+    solvedLetterPoints,
+  } = clearRows(newBoard);
   if (rowsCleared > 0) sfx.lineClear(rowsCleared);
 
   // Daily difficulty multiplier: scales clear rewards with how deep into the
@@ -336,7 +341,10 @@ function lockAndAdvance(
   // the piece that just locked corresponds to index (pieceIndex - 2).
   const dailyMult =
     s.mode === "daily" ? dailyDifficultyTier(Math.max(0, pieceIndex - 2)) : 1;
-  const tilePoints = solvedTilesCleared * 10 * s.level * dailyMult;
+  // Rarity-based scoring: each cleared solved tile is worth its Scrabble
+  // letter value × 5 (so an average word scores roughly like the old flat 10,
+  // but rare letters — K, J, X, Q, Z — pay out much more).
+  const tilePoints = solvedLetterPoints * 5 * s.level * dailyMult;
   const rowBonus =
     rowsCleared > 0 ? solvedTilesCleared * rowsCleared * 5 * dailyMult : 0;
   const newScore = s.score + tilePoints + rowBonus;

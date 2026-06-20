@@ -97,21 +97,54 @@ export function lockPiece(board: Board, p: Piece): Board {
   return next;
 }
 
-export function clearRows(board: Board): { board: Board; cleared: number; solvedTilesCleared: number } {
+// Scrabble tile values — rarer letters score higher.
+const SCRABBLE_VALUES: Record<string, number> = {
+  A: 1, E: 1, I: 1, L: 1, N: 1, O: 1, R: 1, S: 1, T: 1, U: 1,
+  D: 2, G: 2,
+  B: 3, C: 3, M: 3, P: 3,
+  F: 4, H: 4, V: 4, W: 4, Y: 4,
+  K: 5,
+  J: 8, X: 8,
+  Q: 10, Z: 10,
+};
+
+export function letterValue(letter: string | null | undefined): number {
+  if (!letter) return 0;
+  return SCRABBLE_VALUES[letter.toUpperCase()] ?? 1;
+}
+
+export function wordValue(word: string): number {
+  let sum = 0;
+  for (const ch of word) sum += letterValue(ch);
+  return sum;
+}
+
+export function clearRows(board: Board): {
+  board: Board;
+  cleared: number;
+  solvedTilesCleared: number;
+  solvedLetterPoints: number;
+} {
   const keep: (Tile | null)[][] = [];
   let cleared = 0;
   let solvedTilesCleared = 0;
+  let solvedLetterPoints = 0;
   for (let y = 0; y < ROWS; y++) {
     const row = board[y];
     if (row.every((t) => t !== null)) {
       cleared++;
-      solvedTilesCleared += row.filter((t) => t && t.solved).length;
+      for (const t of row) {
+        if (t && t.solved) {
+          solvedTilesCleared++;
+          solvedLetterPoints += letterValue(t.letter);
+        }
+      }
     } else {
       keep.push(row);
     }
   }
   while (keep.length < ROWS) keep.unshift(Array<Tile | null>(COLS).fill(null));
-  return { board: keep, cleared, solvedTilesCleared };
+  return { board: keep, cleared, solvedTilesCleared, solvedLetterPoints };
 }
 
 export type LetterFeedback = "correct" | "present" | "absent";

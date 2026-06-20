@@ -65,7 +65,9 @@ export const submitDailyScore = createServerFn({ method: "POST" })
     const maxTiles = wordsSolved * 6;
     // Daily mode applies a difficulty multiplier up to 4× as the run ramps up.
     const DAILY_MAX_MULT = 4;
-    const maxTilePoints = maxTiles * 10 * level * DAILY_MAX_MULT;
+    // Rarity scoring: each cleared solved tile pays Scrabble letter value × 5.
+    // Max Scrabble letter value is 10 (Q/Z), so per-tile cap is 50.
+    const maxTilePoints = maxTiles * 50 * level * DAILY_MAX_MULT;
     const maxRowBonus = maxTiles * 4 * 5 * DAILY_MAX_MULT;
     if (score > maxTilePoints + maxRowBonus) {
       return { ok: false, reason: "Score exceeds maximum." };
