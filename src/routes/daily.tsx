@@ -75,7 +75,7 @@ function DailyPage() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "p" || e.key === "P") {
+      if (e.key === " " || e.code === "Space") {
         e.preventDefault();
         if (phase === "paused") resume();
         else pause();
@@ -95,7 +95,7 @@ function DailyPage() {
         else if (e.key === "ArrowRight") move(1);
         else if (e.key === "ArrowUp") rotate();
         else if (e.key === "ArrowDown") soft();
-        else if (e.key === " ") { e.preventDefault(); hard(); }
+        else if (e.key === "Shift" || e.key === "Enter") { e.preventDefault(); hard(); }
       }
     };
     window.addEventListener("keydown", onKey);
