@@ -77,6 +77,124 @@ export type Database = {
         }
         Relationships: []
       }
+      room_players: {
+        Row: {
+          client_token: string
+          id: string
+          initials: string
+          is_ready: boolean
+          joined_at: string
+          last_seen_at: string
+          room_id: string
+        }
+        Insert: {
+          client_token: string
+          id?: string
+          initials: string
+          is_ready?: boolean
+          joined_at?: string
+          last_seen_at?: string
+          room_id: string
+        }
+        Update: {
+          client_token?: string
+          id?: string
+          initials?: string
+          is_ready?: boolean
+          joined_at?: string
+          last_seen_at?: string
+          room_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_players_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_scores: {
+        Row: {
+          client_token: string
+          id: string
+          initials: string
+          level: number
+          lines: number
+          room_id: string
+          score: number
+          topped_out: boolean
+          updated_at: string
+          words_solved: number
+        }
+        Insert: {
+          client_token: string
+          id?: string
+          initials: string
+          level?: number
+          lines?: number
+          room_id: string
+          score?: number
+          topped_out?: boolean
+          updated_at?: string
+          words_solved?: number
+        }
+        Update: {
+          client_token?: string
+          id?: string
+          initials?: string
+          level?: number
+          lines?: number
+          room_id?: string
+          score?: number
+          topped_out?: boolean
+          updated_at?: string
+          words_solved?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_scores_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rooms: {
+        Row: {
+          code: string
+          created_at: string
+          host_token: string
+          id: string
+          round_seconds: number
+          seed: string | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          host_token: string
+          id?: string
+          round_seconds?: number
+          seed?: string | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          host_token?: string
+          id?: string
+          round_seconds?: number
+          seed?: string | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       scores: {
         Row: {
           client_token: string

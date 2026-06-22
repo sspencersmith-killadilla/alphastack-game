@@ -20,7 +20,7 @@ import { sfx, unlockAudio } from "@/lib/audio";
 import { newClientToken, track } from "@/lib/analytics-client";
 
 export type Phase = "menu" | "guessing" | "placing" | "locking" | "paused" | "gameover";
-export type Mode = "free" | "daily";
+export type Mode = "free" | "daily" | "match";
 
 export type GuessRow = { letters: string; feedback: LetterFeedback[] };
 
@@ -56,7 +56,7 @@ type State = {
 };
 
 type Actions = {
-  startGame: (opts?: { mode?: Mode }) => void;
+  startGame: (opts?: { mode?: Mode; seed?: string }) => void;
   typeLetter: (l: string) => void;
   backspace: () => void;
   submitGuess: () => void;
@@ -164,8 +164,16 @@ export const useGame = create<State & Actions>((set, get) => ({
   startGame: (opts) => {
     const mode: Mode = opts?.mode ?? "free";
     const dailyDate = mode === "daily" ? getDailySeed() : null;
-    activeRng = mode === "daily" ? createDailyRng(`alphastack:${dailyDate}`) : Math.random;
-    rampMode = mode;
+    if (mode === "daily") {
+      activeRng = createDailyRng(`alphastack:${dailyDate}`);
+    } else if (mode === "match" && opts?.seed) {
+      activeRng = createDailyRng(opts.seed);
+    } else {
+      activeRng = Math.random;
+    }
+    // Match mode reuses daily's length ramp so all players face the same
+    // progressive difficulty curve.
+    rampMode = mode === "match" ? "daily" : mode;
     pieceIndex = 0;
     const first = makeNext(activeRng);
     const second = makeNext(activeRng);
@@ -340,7 +348,9 @@ function lockAndAdvance(
   // pieceIndex was incremented twice at startGame (first + next preview), so
   // the piece that just locked corresponds to index (pieceIndex - 2).
   const dailyMult =
-    s.mode === "daily" ? dailyDifficultyTier(Math.max(0, pieceIndex - 2)) : 1;
+    s.mode === "daily" || s.mode === "match"
+      ? dailyDifficultyTier(Math.max(0, pieceIndex - 2))
+      : 1;
   // Rarity-based scoring: each cleared solved tile is worth its Scrabble
   // letter value × 5 (so an average word scores roughly like the old flat 10,
   // but rare letters — K, J, X, Q, Z — pay out much more).
