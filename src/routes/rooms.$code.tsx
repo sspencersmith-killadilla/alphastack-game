@@ -94,22 +94,18 @@ function RoomPage() {
     };
   }, [code, initials, token, joinFn, navigate]);
 
-  // ----- Realtime subscription -----
+  // ----- Polling for room updates (room tables are not publicly readable, so
+  //       we cannot use Realtime postgres_changes from the browser). -----
   useEffect(() => {
     if (!room) return;
-    const roomId = room.id;
-    async function refresh() {
+    let cancelled = false;
+    const interval = window.setInterval(async () => {
       const res = await getFn({ data: { code } });
-      if (res.ok) setRoom(res.room);
-    }
-    const channel = supabase
-      .channel(`room:${roomId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "rooms", filter: `id=eq.${roomId}` }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "room_players", filter: `room_id=eq.${roomId}` }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "room_scores", filter: `room_id=eq.${roomId}` }, refresh)
-      .subscribe();
+      if (!cancelled && res.ok) setRoom(res.room);
+    }, 1500);
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      window.clearInterval(interval);
     };
   }, [room?.id, code, getFn]);
 
