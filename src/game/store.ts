@@ -164,8 +164,16 @@ export const useGame = create<State & Actions>((set, get) => ({
   startGame: (opts) => {
     const mode: Mode = opts?.mode ?? "free";
     const dailyDate = mode === "daily" ? getDailySeed() : null;
-    activeRng = mode === "daily" ? createDailyRng(`alphastack:${dailyDate}`) : Math.random;
-    rampMode = mode;
+    if (mode === "daily") {
+      activeRng = createDailyRng(`alphastack:${dailyDate}`);
+    } else if (mode === "match" && opts?.seed) {
+      activeRng = createDailyRng(opts.seed);
+    } else {
+      activeRng = Math.random;
+    }
+    // Match mode reuses daily's length ramp so all players face the same
+    // progressive difficulty curve.
+    rampMode = mode === "match" ? "daily" : mode;
     pieceIndex = 0;
     const first = makeNext(activeRng);
     const second = makeNext(activeRng);
