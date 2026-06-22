@@ -60,7 +60,7 @@ function ModeCards() {
         className="group flex flex-col items-start rounded-2xl border border-emerald-400/40 bg-emerald-500/10 p-5 text-left transition-colors hover:bg-emerald-500/20"
       >
         <div className="flex w-full items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-widest text-emerald-300">Daily Puzzle</span>
+          <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-300">Daily Puzzle</h2>
           <span className="rounded-md bg-emerald-500/20 px-2 py-0.5 font-mono text-[10px] text-emerald-200">
             {getDailySeed()}
           </span>
@@ -79,7 +79,7 @@ function ModeCards() {
         to="/play"
         className="group flex flex-col items-start rounded-2xl border border-white/10 bg-slate-900/60 p-5 text-left transition-colors hover:bg-slate-900"
       >
-        <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Free Play</span>
+        <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400">Free Play</h2>
         <div className="mt-2 text-2xl font-extrabold text-white">Endless mode</div>
         <p className="mt-1 text-xs text-slate-400">
           Random words, random shapes, unlimited runs. Chase the all-time leaderboard.

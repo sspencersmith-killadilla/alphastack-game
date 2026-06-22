@@ -132,7 +132,7 @@ function DailyPage() {
   if (blocked) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#0a1024] via-[#0b1330] to-[#0a1024] px-6 text-center text-slate-100">
-        <img src={ALPHASTACK_LOGO_URL} alt="AlphaStack" className="h-20 w-20 rounded-2xl shadow-2xl" />
+        <img src={ALPHASTACK_LOGO_URL} alt="AlphaStack logo" className="h-20 w-20 rounded-2xl shadow-2xl" />
         <h1 className="mt-6 text-3xl font-extrabold">You've played today's puzzle</h1>
         <p className="mt-2 max-w-sm text-slate-400">Daily puzzles refresh at midnight UTC. Come back tomorrow — or jump into Free Play.</p>
         <div className="mt-6 flex gap-3">
@@ -148,7 +148,7 @@ function DailyPage() {
     <div className={`min-h-screen bg-gradient-to-b from-[#0a1024] via-[#0b1330] to-[#0a1024] text-slate-100 ${shake ? "animate-[shake_0.35s]" : ""}`}>
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
         <Link to="/" className="flex items-center gap-2">
-          <img src={ALPHASTACK_LOGO_URL} alt="AlphaStack" className="h-9 w-9 rounded-md" />
+          <img src={ALPHASTACK_LOGO_URL} alt="AlphaStack logo" className="h-9 w-9 rounded-md" />
           <span className="text-xl font-extrabold tracking-tight">
             Alpha<span className="text-emerald-400">Stack</span>
           </span>
@@ -168,6 +168,7 @@ function DailyPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-3 pb-10 md:px-4">
+        <h1 className="sr-only">Daily AlphaStack Puzzle</h1>
         <div className="mb-3 md:hidden">
           <CompactStats />
         </div>
