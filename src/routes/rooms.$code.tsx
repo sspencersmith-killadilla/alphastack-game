@@ -59,9 +59,17 @@ function RoomPage() {
 
   const [room, setRoom] = useState<RoomState | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [token] = useState(() => getToken());
-  const [initials] = useState(() => getInitials());
+  const [token, setToken] = useState<string>("");
+  const [initials, setInitials] = useState<string>("");
+  const [hydrated, setHydrated] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+
+  // Read browser-only state after mount so SSR doesn't lock us to empty values.
+  useEffect(() => {
+    setToken(getToken());
+    setInitials(getInitials());
+    setHydrated(true);
+  }, []);
 
   const startGame = useGame((s) => s.startGame);
   const phase = useGame((s) => s.phase);
@@ -71,12 +79,13 @@ function RoomPage() {
   const wordsSolved = useGame((s) => s.wordsSolved);
   const level = useGame((s) => s.level);
 
-  // ----- Join on mount -----
+  // ----- Join on mount (after hydration) -----
   useEffect(() => {
+    if (!hydrated) return;
     let cancelled = false;
     async function go() {
       if (!/^[A-Z]{3}$/.test(initials)) {
-        navigate({ to: "/rooms" });
+        navigate({ to: "/rooms", search: { code } as never });
         return;
       }
       const res = await joinFn({ data: { code, initials, clientToken: token } });
@@ -91,7 +100,7 @@ function RoomPage() {
     return () => {
       cancelled = true;
     };
-  }, [code, initials, token, joinFn, navigate]);
+  }, [hydrated, code, initials, token, joinFn, navigate]);
 
   // ----- Polling for room updates (room tables are not publicly readable, so
   //       we cannot use Realtime postgres_changes from the browser). -----
