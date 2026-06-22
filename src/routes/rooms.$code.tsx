@@ -8,7 +8,6 @@ import { Keyboard } from "@/components/game/Keyboard";
 import { WordToast } from "@/components/game/WordToast";
 import { useGame } from "@/game/store";
 import { ALPHASTACK_LOGO_URL } from "@/lib/assets";
-import { supabase } from "@/integrations/supabase/client";
 import {
   finishRoom,
   getRoom,
