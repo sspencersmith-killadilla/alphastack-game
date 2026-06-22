@@ -22,7 +22,7 @@ export const Route = createFileRoute("/leaderboard")({
 });
 
 function LeaderboardPage() {
-  const [scope, setScope] = useState<"daily" | "all">("daily");
+  const [scope, setScope] = useState<"daily" | "all">("all");
   const fetchLeaderboard = useServerFn(getLeaderboard);
   const fetchDaily = useServerFn(getDailyLeaderboard);
   const [countdown, setCountdown] = useState(() => msUntilNextDailyReset());
