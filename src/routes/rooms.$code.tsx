@@ -85,7 +85,7 @@ function RoomPage() {
     let cancelled = false;
     async function go() {
       if (!/^[A-Z]{3}$/.test(initials)) {
-        navigate({ to: "/rooms", search: { code } as never });
+        navigate({ to: "/rooms" });
         return;
       }
       const res = await joinFn({ data: { code, initials, clientToken: token } });
