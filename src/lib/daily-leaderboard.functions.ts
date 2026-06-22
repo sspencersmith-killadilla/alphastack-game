@@ -99,6 +99,28 @@ export const submitDailyScore = createServerFn({ method: "POST" })
       return { ok: false, reason: "Could not save score." };
     }
 
+    // Also persist to the permanent all-time leaderboard so daily-mode runs
+    // accumulate across days instead of vanishing at UTC midnight. Use a
+    // distinct client_token derivation so the all-time idempotency check
+    // (one row per client_token) doesn't collide with free-play runs.
+    const allTimeToken = clientToken; // daily tokens are unique per run
+    const { data: existingAll } = await supabaseAdmin
+      .from("scores")
+      .select("id")
+      .eq("client_token", allTimeToken)
+      .maybeSingle();
+    if (!existingAll) {
+      await supabaseAdmin.from("scores").insert({
+        initials,
+        score,
+        lines,
+        level,
+        words_solved: wordsSolved,
+        duration_seconds: durationSeconds,
+        client_token: allTimeToken,
+      });
+    }
+
     const { count } = await supabaseAdmin
       .from("daily_scores")
       .select("*", { count: "exact", head: true })
