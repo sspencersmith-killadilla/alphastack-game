@@ -22,7 +22,7 @@ function loadInitials(): string {
   return window.localStorage.getItem(INITIALS_KEY) ?? "";
 }
 
-export const Route = createFileRoute("/rooms")({
+export const Route = createFileRoute("/rooms/")({
   head: () => ({
     meta: [
       { title: "AlphaStack Multiplayer Rooms — Play with Friends" },
