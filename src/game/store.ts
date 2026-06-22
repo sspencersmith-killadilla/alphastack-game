@@ -20,7 +20,7 @@ import { sfx, unlockAudio } from "@/lib/audio";
 import { newClientToken, track } from "@/lib/analytics-client";
 
 export type Phase = "menu" | "guessing" | "placing" | "locking" | "paused" | "gameover";
-export type Mode = "free" | "daily";
+export type Mode = "free" | "daily" | "match";
 
 export type GuessRow = { letters: string; feedback: LetterFeedback[] };
 
@@ -56,7 +56,7 @@ type State = {
 };
 
 type Actions = {
-  startGame: (opts?: { mode?: Mode }) => void;
+  startGame: (opts?: { mode?: Mode; seed?: string }) => void;
   typeLetter: (l: string) => void;
   backspace: () => void;
   submitGuess: () => void;
