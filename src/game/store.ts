@@ -348,7 +348,9 @@ function lockAndAdvance(
   // pieceIndex was incremented twice at startGame (first + next preview), so
   // the piece that just locked corresponds to index (pieceIndex - 2).
   const dailyMult =
-    s.mode === "daily" ? dailyDifficultyTier(Math.max(0, pieceIndex - 2)) : 1;
+    s.mode === "daily" || s.mode === "match"
+      ? dailyDifficultyTier(Math.max(0, pieceIndex - 2))
+      : 1;
   // Rarity-based scoring: each cleared solved tile is worth its Scrabble
   // letter value × 5 (so an average word scores roughly like the old flat 10,
   // but rare letters — K, J, X, Q, Z — pay out much more).
