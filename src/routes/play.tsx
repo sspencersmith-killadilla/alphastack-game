@@ -119,7 +119,7 @@ function PlayPage() {
     <div className={`min-h-screen bg-gradient-to-b from-[#0a1024] via-[#0b1330] to-[#0a1024] text-slate-100 ${shake ? "animate-[shake_0.35s]" : ""}`}>
       <header className="mx-auto flex max-w-6xl items-center justify-between px-3 py-3 md:px-4 md:py-4">
         <Link to="/" className="flex items-center gap-2">
-          <img src={ALPHASTACK_LOGO_URL} alt="AlphaStack" className="h-9 w-9 rounded-md" />
+          <img src={ALPHASTACK_LOGO_URL} alt="AlphaStack logo" className="h-9 w-9 rounded-md" />
           <span className="text-xl font-extrabold tracking-tight">
             Alpha<span className="text-emerald-400">Stack</span>
           </span>
@@ -138,6 +138,7 @@ function PlayPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-3 pb-[max(2.5rem,env(safe-area-inset-bottom))] md:px-4">
+        <h1 className="sr-only">AlphaStack Free Play</h1>
         <div className="mb-3 md:hidden">
           <CompactStats />
         </div>
