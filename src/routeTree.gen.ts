@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as PlayRouteImport } from './routes/play'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as GamesLikeWordleRouteImport } from './routes/games-like-wordle'
 import { Route as DailyRouteImport } from './routes/daily'
 import { Route as IndexRouteImport } from './routes/index'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlayRoute = PlayRouteImport.update({
   id: '/play',
   path: '/play',
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/games-like-wordle': typeof GamesLikeWordleRoute
   '/leaderboard': typeof LeaderboardRoute
   '/play': typeof PlayRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/games-like-wordle': typeof GamesLikeWordleRoute
   '/leaderboard': typeof LeaderboardRoute
   '/play': typeof PlayRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,12 +70,25 @@ export interface FileRoutesById {
   '/games-like-wordle': typeof GamesLikeWordleRoute
   '/leaderboard': typeof LeaderboardRoute
   '/play': typeof PlayRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/daily' | '/games-like-wordle' | '/leaderboard' | '/play'
+  fullPaths:
+    | '/'
+    | '/daily'
+    | '/games-like-wordle'
+    | '/leaderboard'
+    | '/play'
+    | '/sitemap.xml'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/daily' | '/games-like-wordle' | '/leaderboard' | '/play'
+  to:
+    | '/'
+    | '/daily'
+    | '/games-like-wordle'
+    | '/leaderboard'
+    | '/play'
+    | '/sitemap.xml'
   id:
     | '__root__'
     | '/'
@@ -75,6 +96,7 @@ export interface FileRouteTypes {
     | '/games-like-wordle'
     | '/leaderboard'
     | '/play'
+    | '/sitemap.xml'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -83,10 +105,18 @@ export interface RootRouteChildren {
   GamesLikeWordleRoute: typeof GamesLikeWordleRoute
   LeaderboardRoute: typeof LeaderboardRoute
   PlayRoute: typeof PlayRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/play': {
       id: '/play'
       path: '/play'
@@ -131,6 +161,7 @@ const rootRouteChildren: RootRouteChildren = {
   GamesLikeWordleRoute: GamesLikeWordleRoute,
   LeaderboardRoute: LeaderboardRoute,
   PlayRoute: PlayRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
