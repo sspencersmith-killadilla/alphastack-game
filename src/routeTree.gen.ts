@@ -16,6 +16,7 @@ import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as GamesLikeWordleRouteImport } from './routes/games-like-wordle'
 import { Route as DailyRouteImport } from './routes/daily'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RoomsCodeRouteImport } from './routes/rooms.$code'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -52,6 +53,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RoomsCodeRoute = RoomsCodeRouteImport.update({
+  id: '/$code',
+  path: '/$code',
+  getParentRoute: () => RoomsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,8 +65,9 @@ export interface FileRoutesByFullPath {
   '/games-like-wordle': typeof GamesLikeWordleRoute
   '/leaderboard': typeof LeaderboardRoute
   '/play': typeof PlayRoute
-  '/rooms': typeof RoomsRoute
+  '/rooms': typeof RoomsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/rooms/$code': typeof RoomsCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -68,8 +75,9 @@ export interface FileRoutesByTo {
   '/games-like-wordle': typeof GamesLikeWordleRoute
   '/leaderboard': typeof LeaderboardRoute
   '/play': typeof PlayRoute
-  '/rooms': typeof RoomsRoute
+  '/rooms': typeof RoomsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/rooms/$code': typeof RoomsCodeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -78,8 +86,9 @@ export interface FileRoutesById {
   '/games-like-wordle': typeof GamesLikeWordleRoute
   '/leaderboard': typeof LeaderboardRoute
   '/play': typeof PlayRoute
-  '/rooms': typeof RoomsRoute
+  '/rooms': typeof RoomsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/rooms/$code': typeof RoomsCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
     | '/play'
     | '/rooms'
     | '/sitemap.xml'
+    | '/rooms/$code'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
     | '/play'
     | '/rooms'
     | '/sitemap.xml'
+    | '/rooms/$code'
   id:
     | '__root__'
     | '/'
@@ -109,6 +120,7 @@ export interface FileRouteTypes {
     | '/play'
     | '/rooms'
     | '/sitemap.xml'
+    | '/rooms/$code'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,7 +129,7 @@ export interface RootRouteChildren {
   GamesLikeWordleRoute: typeof GamesLikeWordleRoute
   LeaderboardRoute: typeof LeaderboardRoute
   PlayRoute: typeof PlayRoute
-  RoomsRoute: typeof RoomsRoute
+  RoomsRoute: typeof RoomsRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
 
@@ -172,8 +184,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/rooms/$code': {
+      id: '/rooms/$code'
+      path: '/$code'
+      fullPath: '/rooms/$code'
+      preLoaderRoute: typeof RoomsCodeRouteImport
+      parentRoute: typeof RoomsRoute
+    }
   }
 }
+
+interface RoomsRouteChildren {
+  RoomsCodeRoute: typeof RoomsCodeRoute
+}
+
+const RoomsRouteChildren: RoomsRouteChildren = {
+  RoomsCodeRoute: RoomsCodeRoute,
+}
+
+const RoomsRouteWithChildren = RoomsRoute._addFileChildren(RoomsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -181,7 +210,7 @@ const rootRouteChildren: RootRouteChildren = {
   GamesLikeWordleRoute: GamesLikeWordleRoute,
   LeaderboardRoute: LeaderboardRoute,
   PlayRoute: PlayRoute,
-  RoomsRoute: RoomsRoute,
+  RoomsRoute: RoomsRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
 export const routeTree = rootRouteImport

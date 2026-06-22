@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Board } from "@/components/game/Board";
 import { Controls } from "@/components/game/Controls";
 import { GuessPanel } from "@/components/game/GuessPanel";
