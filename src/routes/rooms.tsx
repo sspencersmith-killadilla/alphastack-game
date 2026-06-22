@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ALPHASTACK_LOGO_URL } from "@/lib/assets";
 import { createRoom } from "@/lib/rooms.functions";
 
@@ -44,10 +44,16 @@ function normalizeCode(v: string): string {
 function RoomsLanding() {
   const navigate = useNavigate();
   const create = useServerFn(createRoom);
-  const [initials, setInitials] = useState(loadInitials());
+  const [initials, setInitials] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Hydrate from localStorage after mount so SSR doesn't lock us to "".
+  useEffect(() => {
+    const saved = loadInitials();
+    if (saved) setInitials(saved);
+  }, []);
 
   const initialsOk = /^[A-Z]{3}$/.test(initials);
 
