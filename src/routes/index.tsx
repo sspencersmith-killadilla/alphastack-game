@@ -88,6 +88,22 @@ function ModeCards() {
           Play as much as you want
         </div>
       </Link>
+      <Link
+        to="/rooms"
+        className="group flex flex-col items-start rounded-2xl border border-fuchsia-400/40 bg-fuchsia-500/10 p-5 text-left transition-colors hover:bg-fuchsia-500/20 sm:col-span-2"
+      >
+        <div className="flex w-full items-center justify-between">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-fuchsia-300">Multiplayer</h2>
+          <span className="rounded-md bg-fuchsia-500/20 px-2 py-0.5 font-mono text-[10px] text-fuchsia-200">2–6 players</span>
+        </div>
+        <div className="mt-2 text-2xl font-extrabold text-white">Play with friends</div>
+        <p className="mt-1 text-xs text-slate-300">
+          Create a private room, share the code, race the same puzzle sequence in real time.
+        </p>
+        <div className="mt-3 text-[10px] uppercase tracking-widest text-fuchsia-300/80">
+          Live leaderboard while you play
+        </div>
+      </Link>
     </div>
   );
 }
