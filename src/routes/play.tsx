@@ -116,8 +116,8 @@ function PlayPage() {
   }, []);
 
   return (
-    <div className={`min-h-screen bg-gradient-to-b from-[#0a1024] via-[#0b1330] to-[#0a1024] text-slate-100 ${shake ? "animate-[shake_0.35s]" : ""}`}>
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-3 py-3 md:px-4 md:py-4">
+    <div className={`md:min-h-screen h-[100dvh] md:h-auto flex flex-col bg-gradient-to-b from-[#0a1024] via-[#0b1330] to-[#0a1024] text-slate-100 ${shake ? "animate-[shake_0.35s]" : ""}`}>
+      <header className="mx-auto flex w-full max-w-6xl shrink-0 items-center justify-between px-3 py-2 md:px-4 md:py-4">
         <Link to="/" className="flex items-center gap-2">
           <img src={ALPHASTACK_LOGO_URL} alt="AlphaStack logo" className="h-9 w-9 rounded-md" />
           <span className="text-xl font-extrabold tracking-tight">
@@ -137,25 +137,26 @@ function PlayPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-3 pb-[max(2.5rem,env(safe-area-inset-bottom))] md:px-4">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col px-3 pb-[env(safe-area-inset-bottom)] md:pb-10 md:px-4">
         <h1 className="sr-only">AlphaStack Free Play</h1>
-        <div className="mb-3 md:hidden">
-          <CompactStats />
-        </div>
-        {/* Mobile: phase-aware action zone right under board for thumb reach */}
-        <div className="md:hidden space-y-3">
-          <div className="flex justify-center">
+        {/* Mobile: fits within one viewport height */}
+        <div className="md:hidden flex flex-1 min-h-0 flex-col gap-2">
+          <div className="shrink-0">
+            <CompactStats />
+          </div>
+          <div className="flex flex-1 min-h-0 items-center justify-center" style={{ ["--board-h" as string]: "100%" } as React.CSSProperties}>
             <Board />
           </div>
-          {phase === "guessing" || phase === "paused" ? (
-            <>
-              <GuessPanel />
-              <Keyboard />
-            </>
-          ) : (
-            <Controls />
-          )}
-          <HowToPlay />
+          <div className="shrink-0">
+            {phase === "guessing" || phase === "paused" ? (
+              <div className="space-y-2">
+                <GuessPanel />
+                <Keyboard />
+              </div>
+            ) : (
+              <Controls />
+            )}
+          </div>
         </div>
         {/* Desktop layout unchanged */}
         <div className="hidden md:grid grid-cols-1 gap-4 md:grid-cols-[140px_minmax(0,1fr)_300px] md:gap-6">
