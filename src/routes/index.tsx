@@ -46,10 +46,11 @@ function Home() {
 }
 
 function ModeCards() {
-  const [ms, setMs] = useState(() => msUntilNextDailyReset());
+  const [ms, setMs] = useState<number | null>(null);
   const [playedToday, setPlayedToday] = useState(false);
   useEffect(() => {
     setPlayedToday(window.localStorage.getItem(`alphastack:daily:${getDailySeed()}`) === "done");
+    setMs(msUntilNextDailyReset());
     const id = window.setInterval(() => setMs(msUntilNextDailyReset()), 1000);
     return () => window.clearInterval(id);
   }, []);
@@ -71,8 +72,8 @@ function ModeCards() {
         <p className="mt-1 text-xs text-slate-300">
           Same words and shapes for everyone. One attempt per day.
         </p>
-        <div className="mt-3 text-[10px] uppercase tracking-widest text-emerald-300/80">
-          Next puzzle in {formatCountdown(ms)}
+        <div className="mt-3 text-[10px] uppercase tracking-widest text-emerald-300/80" suppressHydrationWarning>
+          Next puzzle in {ms === null ? "--:--:--" : formatCountdown(ms)}
         </div>
       </Link>
       <Link
