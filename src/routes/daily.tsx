@@ -145,8 +145,8 @@ function DailyPage() {
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-b from-[#0a1024] via-[#0b1330] to-[#0a1024] text-slate-100 ${shake ? "animate-[shake_0.35s]" : ""}`}>
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+    <div className={`md:min-h-screen h-[100dvh] md:h-auto flex flex-col bg-gradient-to-b from-[#0a1024] via-[#0b1330] to-[#0a1024] text-slate-100 ${shake ? "animate-[shake_0.35s]" : ""}`}>
+      <header className="mx-auto flex w-full max-w-6xl shrink-0 items-center justify-between px-3 py-2 md:px-4 md:py-4">
         <Link to="/" className="flex items-center gap-2">
           <img src={ALPHASTACK_LOGO_URL} alt="AlphaStack logo" className="h-9 w-9 rounded-md" />
           <span className="text-xl font-extrabold tracking-tight">
@@ -167,13 +167,28 @@ function DailyPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-3 pb-10 md:px-4">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col px-3 pb-[env(safe-area-inset-bottom)] md:pb-10 md:px-4">
         <h1 className="sr-only">Daily AlphaStack Puzzle</h1>
-        <div className="mb-3 md:hidden">
-          <CompactStats />
+        {/* Mobile: fits within one viewport height */}
+        <div className="md:hidden flex flex-1 min-h-0 flex-col gap-2">
+          <div className="shrink-0"><CompactStats /></div>
+          <div className="flex flex-1 min-h-0 items-center justify-center" style={{ ["--board-h" as string]: "100%" } as React.CSSProperties}>
+            <Board />
+          </div>
+          <div className="shrink-0">
+            {phase === "guessing" || phase === "paused" ? (
+              <div className="space-y-2">
+                <GuessPanel />
+                <Keyboard />
+              </div>
+            ) : (
+              <Controls />
+            )}
+          </div>
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-[140px_minmax(0,1fr)_300px] md:gap-6">
-          <aside className="hidden md:block"><Sidebar /></aside>
+        {/* Desktop layout unchanged */}
+        <div className="hidden md:grid grid-cols-1 gap-4 md:grid-cols-[140px_minmax(0,1fr)_300px] md:gap-6">
+          <aside className="block"><Sidebar /></aside>
           <section className="flex justify-center"><Board /></section>
           <aside className="space-y-4">
             <GuessPanel />

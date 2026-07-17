@@ -85,7 +85,10 @@ export function Board() {
         gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`,
         gridTemplateRows: `repeat(${ROWS}, minmax(0, 1fr))`,
         aspectRatio: `${COLS} / ${ROWS}`,
-        width: "min(46vh, 100%)",
+        height: "var(--board-h, min(70vh, 620px))",
+        width: "auto",
+        maxWidth: "100%",
+        maxHeight: "100%",
       }}
     >
       {Array.from({ length: ROWS }).flatMap((_, y) =>
