@@ -16,7 +16,7 @@ export function Keyboard() {
   const disabled = phase !== "guessing";
 
   return (
-    <div className="space-y-1.5 select-none">
+    <div className="space-y-1 select-none">
       {KEY_ROWS.map((row, i) => (
         <div key={i} className="flex justify-center gap-1">
           {row.map((k) => {
@@ -33,7 +33,7 @@ export function Keyboard() {
                 type="button"
                 onClick={onClick}
                 disabled={disabled}
-                className={`h-11 min-w-[30px] sm:h-9 sm:min-w-[26px] rounded-md px-1.5 text-sm sm:text-xs font-bold uppercase tracking-wide transition-colors disabled:opacity-50 touch-manipulation select-none ${keyClasses(state)} ${k.length > 1 ? "px-2" : ""}`}
+                className={`h-9 min-w-[28px] sm:h-9 sm:min-w-[26px] rounded-md px-1.5 text-sm sm:text-xs font-bold uppercase tracking-wide transition-colors disabled:opacity-50 touch-manipulation select-none ${keyClasses(state)} ${k.length > 1 ? "px-2" : ""}`}
               >
                 {k === "BACK" ? <Delete className="mx-auto h-4 w-4" /> : k}
               </button>
